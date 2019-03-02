@@ -2820,7 +2820,7 @@ void JPXStream::inverseTransform(JPXTileComp *tileComp) {
 	    if (shift2 > 0) {
 	      cover(94);
 	      if (val < 0) {
-		val = (val << shift2) - (1 << (shift2 - 1));
+		val = (((unsigned int)val) << shift2) - (1 << (shift2 - 1));
 	      } else {
 		val = (val << shift2) + (1 << (shift2 - 1));
 	      }
@@ -2832,7 +2832,7 @@ void JPXStream::inverseTransform(JPXTileComp *tileComp) {
 	      cover(96);
 	      if (tileComp->transform == 0) {
 		cover(97);
-		val &= -1 << fracBits;
+		val &= 0xFFFFFFFF << fracBits;
 	      }
 	    } else {
 	      cover(98);
@@ -2935,7 +2935,7 @@ void JPXStream::inverseTransformLevel(JPXTileComp *tileComp,
 	      if (shift2 > 0) {
 		cover(74);
 		if (val < 0) {
-		  val = (val << shift2) - (1 << (shift2 - 1));
+		  val = (((unsigned int)val) << shift2) - (1 << (shift2 - 1));
 		} else {
 		  val = (val << shift2) + (1 << (shift2 - 1));
 		}
@@ -2946,7 +2946,7 @@ void JPXStream::inverseTransformLevel(JPXTileComp *tileComp,
 	      if (qStyle == 0) {
 		cover(76);
 		if (tileComp->transform == 0) {
-		  val &= -1 << fracBits;
+		  val &= 0xFFFFFFFF << fracBits;
 		}
 	      } else {
 		cover(77);
