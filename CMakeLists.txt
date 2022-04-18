@@ -478,15 +478,8 @@ else()
   set(PC_REQUIRES_PRIVATE "")
 endif()
 
-poppler_create_install_pkgconfig(poppler.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-if(ENABLE_SPLASH)
-  poppler_create_install_pkgconfig(poppler-splash.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
 if(ENABLE_QT4)
   poppler_create_install_pkgconfig(poppler-qt4.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
-if(CAIRO_FOUND)
-  poppler_create_install_pkgconfig(poppler-cairo.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
 
