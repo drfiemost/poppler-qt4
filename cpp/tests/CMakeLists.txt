@@ -2,7 +2,6 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   ${CMAKE_CURRENT_BINARY_DIR}/..
-  ${CMAKE_SOURCE_DIR}/utils
 )
 
 macro(CPP_ADD_SIMPLETEST exe)
@@ -18,8 +17,8 @@ macro(CPP_ADD_SIMPLETEST exe)
 endmacro(CPP_ADD_SIMPLETEST)
 
 
-cpp_add_simpletest(poppler-dump poppler-dump.cpp ${CMAKE_SOURCE_DIR}/utils/parseargs.cc)
+cpp_add_simpletest(poppler-dump poppler-dump.cpp ${CMAKE_SOURCE_DIR}/test/parseargs.cc)
 target_link_libraries(poppler-dump poppler)
 
-cpp_add_simpletest(poppler-render poppler-render.cpp ${CMAKE_SOURCE_DIR}/utils/parseargs.cc)
+cpp_add_simpletest(poppler-render poppler-render.cpp ${CMAKE_SOURCE_DIR}/test/parseargs.cc)
 target_link_libraries(poppler-render poppler)

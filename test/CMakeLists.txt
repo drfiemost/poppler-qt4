@@ -44,7 +44,7 @@ endif ()
 
 set (pdf_fullrewrite_SRCS
   pdf-fullrewrite.cc
-  ../utils/parseargs.cc
+  parseargs.cc
 )
 add_executable(pdf-fullrewrite ${pdf_fullrewrite_SRCS})
 target_link_libraries(pdf-fullrewrite poppler)

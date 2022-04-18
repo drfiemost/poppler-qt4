@@ -13,7 +13,7 @@
 #include "PDFDoc.h"
 #include "XRef.h"
 #include "goo/GooString.h"
-#include "utils/parseargs.h"
+#include "parseargs.h"
 
 static GBool compareDocuments(PDFDoc *origDoc, PDFDoc *newDoc);
 static GBool compareObjects(Object *objA, Object *objB);
