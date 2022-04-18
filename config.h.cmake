@@ -189,9 +189,6 @@
 /* Use win32 font configuration backend */
 #cmakedefine WITH_FONTCONFIGURATION_WIN32 1
 
-/* OpenJPEG with the OPJ_DPARAMETERS_IGNORE_PCLR_CMAP_CDEF_FLAG flag */
-#cmakedefine WITH_OPENJPEG_IGNORE_PCLR_CMAP_CDEF_FLAG 1
-
 /* MS defined snprintf as deprecated but then added it in Visual Studio 2015. */
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define snprintf _snprintf
