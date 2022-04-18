@@ -2996,7 +2996,7 @@ struct SplashOutImageData {
   SplashColor matteColor;
 };
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 GBool SplashOutputDev::useIccImageSrc(void *data) {
   SplashOutImageData *imgData = (SplashOutImageData *)data;
 
@@ -3189,7 +3189,7 @@ GBool SplashOutputDev::imageSrc(void *data, SplashColorPtr colorLine,
   return gTrue;
 }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 GBool SplashOutputDev::iccImageSrc(void *data, SplashColorPtr colorLine,
 				Guchar * /*alphaLine*/) {
   SplashOutImageData *imgData = (SplashOutImageData *)data;
@@ -3614,7 +3614,7 @@ void SplashOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
   } else {
     srcMode = colorMode;
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   src = maskColors ? &alphaImageSrc : useIccImageSrc(&imgData) ? &iccImageSrc : &imageSrc;
   tf = maskColors == NULL && useIccImageSrc(&imgData) ? &iccTransform : NULL;
 #else

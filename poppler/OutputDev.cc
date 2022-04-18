@@ -193,7 +193,7 @@ GooHash *OutputDev::endProfile() {
   return profile;
 }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 PopplerCache *OutputDev::getIccColorSpaceCache()
 {
   return &iccColorSpaceCache;

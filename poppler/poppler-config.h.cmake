@@ -115,8 +115,8 @@
 #endif
 
 /* Defines if use cms */
-#ifndef USE_CMS
-#cmakedefine USE_CMS 1
+#ifndef ENABLE_LCMS2
+#cmakedefine ENABLE_LCMS2 1
 #endif
 
 // Also, there are preprocessor symbols in the header files

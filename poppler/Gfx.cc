@@ -571,7 +571,7 @@ Gfx::Gfx(PDFDoc *docA, OutputDev *outA, int pageNum, Dict *resDict,
     out->clip(state);
     state->clearPath();
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   initDisplayProfile();
 #endif
 }
@@ -623,19 +623,15 @@ Gfx::Gfx(PDFDoc *docA, OutputDev *outA, Dict *resDict,
     out->clip(state);
     state->clearPath();
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   initDisplayProfile();
 #endif
 }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 
-#ifdef USE_LCMS1
-#include <lcms.h>
-#else
 #include <lcms2.h>
 #define LCMS_FLAGS cmsFLAGS_NOOPTIMIZE
-#endif
 
 void Gfx::initDisplayProfile() {
    Object catDict = xref->getCatalog();

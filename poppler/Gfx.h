@@ -156,7 +156,7 @@ public:
       PDFRectangle *box, PDFRectangle *cropBox,
       GBool (*abortCheckCbkA)(void *data) = NULL,
       void *abortCheckCbkDataA = NULL, XRef *xrefA = NULL);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   void initDisplayProfile();
 #endif
   ~Gfx();

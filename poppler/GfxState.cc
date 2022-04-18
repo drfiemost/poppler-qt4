@@ -174,44 +174,12 @@ static const char *gfxColorSpaceModeNames[] = {
 
 #define nGfxColorSpaceModes ((sizeof(gfxColorSpaceModeNames) / sizeof(char *)))
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 
 static const std::map<unsigned int, unsigned int>::size_type CMSCACHE_LIMIT = 2048;
 
-#ifdef USE_LCMS1
-#include <lcms.h>
-#define cmsColorSpaceSignature icColorSpaceSignature
-#define cmsSetLogErrorHandler cmsSetErrorHandler
-#define cmsSigXYZData icSigXYZData
-#define cmsSigLuvData icSigLuvData
-#define cmsSigLabData icSigLabData
-#define cmsSigYCbCrData icSigYCbCrData
-#define cmsSigYxyData icSigYxyData
-#define cmsSigRgbData icSigRgbData
-#define cmsSigHsvData icSigHsvData
-#define cmsSigHlsData icSigHlsData
-#define cmsSigCmyData icSigCmyData
-#define cmsSig3colorData icSig3colorData
-#define cmsSigGrayData icSigGrayData
-#define cmsSigCmykData icSigCmykData
-#define cmsSig4colorData icSig4colorData
-#define cmsSig2colorData icSig2colorData
-#define cmsSig5colorData icSig5colorData
-#define cmsSig6colorData icSig6colorData
-#define cmsSig7colorData icSig7colorData
-#define cmsSig8colorData icSig8colorData
-#define cmsSig9colorData icSig9colorData
-#define cmsSig10colorData icSig10colorData
-#define cmsSig11colorData icSig11colorData
-#define cmsSig12colorData icSig12colorData
-#define cmsSig13colorData icSig13colorData
-#define cmsSig14colorData icSig14colorData
-#define cmsSig15colorData icSig15colorData
-#define LCMS_FLAGS 0
-#else
 #include <lcms2.h>
 #define LCMS_FLAGS cmsFLAGS_NOOPTIMIZE | cmsFLAGS_BLACKPOINTCOMPENSATION
-#endif
 
 #define COLOR_PROFILE_DIR "/ColorProfiles/"
 #define GLOBAL_COLOR_PROFILE_DIR POPPLER_DATADIR COLOR_PROFILE_DIR
@@ -470,7 +438,7 @@ const char *GfxColorSpace::getColorSpaceModeName(int idx) {
   return gfxColorSpaceModeNames[idx];
 }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 cmsHPROFILE loadColorProfile(const char *fileName)
 {
   cmsHPROFILE hp = NULL;
@@ -497,18 +465,10 @@ cmsHPROFILE loadColorProfile(const char *fileName)
   return hp;
 }
 
-#ifdef USE_LCMS1
-static int CMSError(int ecode, const char *msg)
-{
-    error(errSyntaxWarning, -1, "{0:s}", msg);
-    return 1;
-}
-#else
 static void CMSError(cmsContext /*contextId*/, cmsUInt32Number /*ecode*/, const char *text)
 {
     error(errSyntaxWarning, -1, "{0:s}", text);
 }
-#endif
 
 int GfxColorSpace::setupColorProfiles()
 {
@@ -772,7 +732,7 @@ GfxCalGrayColorSpace::GfxCalGrayColorSpace() {
 }
 
 GfxCalGrayColorSpace::~GfxCalGrayColorSpace() {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL) {
     if (transform->unref() == 0) delete transform;
   }
@@ -793,7 +753,7 @@ GfxColorSpace *GfxCalGrayColorSpace::copy() {
   cs->kr = kr;
   cs->kg = kg;
   cs->kb = kb;
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = transform;
   if (transform != NULL) transform->ref();
 #endif
@@ -856,7 +816,7 @@ GfxColorSpace *GfxCalGrayColorSpace::parse(Array *arr, GfxState *state) {
   cs->kb = 1 / (xyzrgb[2][0] * cs->whiteX +
 		xyzrgb[2][1] * cs->whiteY +
 		xyzrgb[2][2] * cs->whiteZ);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = (state != NULL) ? state->getXYZ2DisplayTransform() : XYZ2DisplayTransform;
   if (cs->transform != NULL) cs->transform->ref();
 #endif
@@ -877,7 +837,7 @@ void GfxCalGrayColorSpace::getXYZ(GfxColor *color,
 void GfxCalGrayColorSpace::getGray(GfxColor *color, GfxGray *gray) {
   GfxRGB rgb;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_GRAY) {
     Guchar out[gfxColorMaxComps];
     double in[gfxColorMaxComps];
@@ -903,7 +863,7 @@ void GfxCalGrayColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
   double r, g, b;
 
   getXYZ(color,&X,&Y,&Z);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_RGB) {
     Guchar out[gfxColorMaxComps];
     double in[gfxColorMaxComps];
@@ -934,7 +894,7 @@ void GfxCalGrayColorSpace::getCMYK(GfxColor *color, GfxCMYK *cmyk) {
   GfxRGB rgb;
   GfxColorComp c, m, y, k;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_CMYK) {
     double in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
@@ -1143,7 +1103,7 @@ GfxCalRGBColorSpace::GfxCalRGBColorSpace() {
 }
 
 GfxCalRGBColorSpace::~GfxCalRGBColorSpace() {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL) {
     if (transform->unref() == 0) delete transform;
   }
@@ -1170,7 +1130,7 @@ GfxColorSpace *GfxCalRGBColorSpace::copy() {
   for (i = 0; i < 9; ++i) {
     cs->mat[i] = mat[i];
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = transform;
   if (transform != NULL) transform->ref();
 #endif
@@ -1243,7 +1203,7 @@ GfxColorSpace *GfxCalRGBColorSpace::parse(Array *arr, GfxState *state) {
 		xyzrgb[2][1] * cs->whiteY +
 		xyzrgb[2][2] * cs->whiteZ);
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = (state != NULL) ? state->getXYZ2DisplayTransform() : XYZ2DisplayTransform;
   if (cs->transform != NULL) cs->transform->ref();
 #endif
@@ -1266,7 +1226,7 @@ void GfxCalRGBColorSpace::getXYZ(GfxColor *color,
 void GfxCalRGBColorSpace::getGray(GfxColor *color, GfxGray *gray) {
   GfxRGB rgb;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_GRAY) {
     Guchar out[gfxColorMaxComps];
     double in[gfxColorMaxComps];
@@ -1292,7 +1252,7 @@ void GfxCalRGBColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
   double r, g, b;
 
   getXYZ(color,&X,&Y,&Z);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_RGB) {
     Guchar out[gfxColorMaxComps];
     double in[gfxColorMaxComps];
@@ -1320,7 +1280,7 @@ void GfxCalRGBColorSpace::getCMYK(GfxColor *color, GfxCMYK *cmyk) {
   GfxRGB rgb;
   GfxColorComp c, m, y, k;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_CMYK) {
     double in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
@@ -1517,7 +1477,7 @@ GfxLabColorSpace::GfxLabColorSpace() {
 }
 
 GfxLabColorSpace::~GfxLabColorSpace() {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL) {
     if (transform->unref() == 0) delete transform;
   }
@@ -1541,7 +1501,7 @@ GfxColorSpace *GfxLabColorSpace::copy() {
   cs->kr = kr;
   cs->kg = kg;
   cs->kb = kb;
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = transform;
   if (transform != NULL) transform->ref();
 #endif
@@ -1598,7 +1558,7 @@ GfxColorSpace *GfxLabColorSpace::parse(Array *arr, GfxState *state) {
 		xyzrgb[2][1] * cs->whiteY +
 		xyzrgb[2][2] * cs->whiteZ);
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = (state != NULL) ? state->getXYZ2DisplayTransform() : XYZ2DisplayTransform;
   if (cs->transform != NULL) cs->transform->ref();
 #endif
@@ -1608,7 +1568,7 @@ GfxColorSpace *GfxLabColorSpace::parse(Array *arr, GfxState *state) {
 void GfxLabColorSpace::getGray(GfxColor *color, GfxGray *gray) {
   GfxRGB rgb;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_GRAY) {
     Guchar out[gfxColorMaxComps];
     double in[gfxColorMaxComps];
@@ -1660,7 +1620,7 @@ void GfxLabColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
   double r, g, b;
 
   getXYZ(color, &X, &Y, &Z);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_RGB) {
     Guchar out[gfxColorMaxComps];
     double in[gfxColorMaxComps];
@@ -1713,7 +1673,7 @@ void GfxLabColorSpace::getCMYK(GfxColor *color, GfxCMYK *cmyk) {
   GfxRGB rgb;
   GfxColorComp c, m, y, k;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_CMYK) {
     double in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
@@ -1826,7 +1786,7 @@ GfxICCBasedColorSpace::GfxICCBasedColorSpace(int nCompsA, GfxColorSpace *altA,
   iccProfileStream = *iccProfileStreamA;
   rangeMin[0] = rangeMin[1] = rangeMin[2] = rangeMin[3] = 0;
   rangeMax[0] = rangeMax[1] = rangeMax[2] = rangeMax[3] = 1;
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   transform = NULL;
   lineTransform = NULL;
 #endif
@@ -1834,7 +1794,7 @@ GfxICCBasedColorSpace::GfxICCBasedColorSpace(int nCompsA, GfxColorSpace *altA,
 
 GfxICCBasedColorSpace::~GfxICCBasedColorSpace() {
   delete alt;
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL) {
     if (transform->unref() == 0) delete transform;
   }
@@ -1853,7 +1813,7 @@ GfxColorSpace *GfxICCBasedColorSpace::copy() {
     cs->rangeMin[i] = rangeMin[i];
     cs->rangeMax[i] = rangeMax[i];
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   cs->transform = transform;
   if (transform != NULL) transform->ref();
   cs->lineTransform = lineTransform;
@@ -1882,7 +1842,7 @@ GfxColorSpace *GfxICCBasedColorSpace::parse(Array *arr, OutputDev *out, GfxState
     iccProfileStreamA.num = 0;
     iccProfileStreamA.gen = 0;
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   // check cache
   if (out && iccProfileStreamA.num > 0) {
     GfxICCBasedColorSpaceKey k(iccProfileStreamA.num, iccProfileStreamA.gen);
@@ -1966,7 +1926,7 @@ GfxColorSpace *GfxICCBasedColorSpace::parse(Array *arr, OutputDev *out, GfxState
     }
   }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   obj1 = arr->get(1);
   Guchar *profBuf;
   Stream *iccStream = obj1.getStream();
@@ -2038,7 +1998,7 @@ GfxColorSpace *GfxICCBasedColorSpace::parse(Array *arr, OutputDev *out, GfxState
 }
 
 void GfxICCBasedColorSpace::getGray(GfxColor *color, GfxGray *gray) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != 0 && transform->getTransformPixelType() == PT_GRAY) {
     Guchar in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
@@ -2087,7 +2047,7 @@ void GfxICCBasedColorSpace::getGray(GfxColor *color, GfxGray *gray) {
 }
 
 void GfxICCBasedColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != 0 && transform->getTransformPixelType() == PT_RGB) {
     Guchar in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
@@ -2186,7 +2146,7 @@ void GfxICCBasedColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
 
 void GfxICCBasedColorSpace::getRGBLine(Guchar *in, unsigned int *out,
 				       int length) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (lineTransform != 0 && lineTransform->getTransformPixelType() == PT_RGB) {
     Guchar* tmp = (Guchar *)gmallocn(3 * length, sizeof(Guchar));
     lineTransform->doTransform(in, tmp, length);
@@ -2204,7 +2164,7 @@ void GfxICCBasedColorSpace::getRGBLine(Guchar *in, unsigned int *out,
 }
 
 void GfxICCBasedColorSpace::getRGBLine(Guchar *in, Guchar *out, int length) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (lineTransform != 0 && lineTransform->getTransformPixelType() == PT_RGB) {
     Guchar* tmp = (Guchar *)gmallocn(3 * length, sizeof(Guchar));
     lineTransform->doTransform(in, tmp, length);
@@ -2244,7 +2204,7 @@ void GfxICCBasedColorSpace::getRGBLine(Guchar *in, Guchar *out, int length) {
 }
 
 void GfxICCBasedColorSpace::getRGBXLine(Guchar *in, Guchar *out, int length) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (lineTransform != 0 && lineTransform->getTransformPixelType() == PT_RGB) {
     Guchar* tmp = (Guchar *)gmallocn(3 * length, sizeof(Guchar));
     lineTransform->doTransform(in, tmp, length);
@@ -2265,7 +2225,7 @@ void GfxICCBasedColorSpace::getRGBXLine(Guchar *in, Guchar *out, int length) {
 }
 
 void GfxICCBasedColorSpace::getCMYKLine(Guchar *in, Guchar *out, int length) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (lineTransform != NULL && lineTransform->getTransformPixelType() == PT_CMYK) {
     transform->doTransform(in,out,length);
   } else if (lineTransform != NULL && nComps != 4) {
@@ -2299,7 +2259,7 @@ void GfxICCBasedColorSpace::getCMYKLine(Guchar *in, Guchar *out, int length) {
 }
 
 void GfxICCBasedColorSpace::getDeviceNLine(Guchar *in, Guchar *out, int length) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (lineTransform != NULL && lineTransform->getTransformPixelType() == PT_CMYK) {
     Guchar* tmp = (Guchar *)gmallocn(4 * length, sizeof(Guchar));
     transform->doTransform(in,tmp,length);
@@ -2345,7 +2305,7 @@ void GfxICCBasedColorSpace::getDeviceNLine(Guchar *in, Guchar *out, int length) 
 }
 
 void GfxICCBasedColorSpace::getCMYK(GfxColor *color, GfxCMYK *cmyk) {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (transform != NULL && transform->getTransformPixelType() == PT_CMYK) {
     Guchar in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
@@ -2415,7 +2375,7 @@ void GfxICCBasedColorSpace::getCMYK(GfxColor *color, GfxCMYK *cmyk) {
 }
 
 GBool GfxICCBasedColorSpace::useGetRGBLine() {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   return lineTransform != NULL || alt->useGetRGBLine();
 #else
   return alt->useGetRGBLine();
@@ -2423,7 +2383,7 @@ GBool GfxICCBasedColorSpace::useGetRGBLine() {
 }
 
 GBool GfxICCBasedColorSpace::useGetCMYKLine() {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   return lineTransform != NULL || alt->useGetCMYKLine();
 #else
   return alt->useGetCMYKLine();
@@ -2431,7 +2391,7 @@ GBool GfxICCBasedColorSpace::useGetCMYKLine() {
 }
 
 GBool GfxICCBasedColorSpace::useGetDeviceNLine() {
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   return lineTransform != NULL || alt->useGetDeviceNLine();
 #else
   return alt->useGetDeviceNLine();
@@ -6546,7 +6506,7 @@ GfxState::GfxState(double hDPIA, double vDPIA, PDFRectangle *pageBox,
   renderingIntent[0] = 0;
 
   saved = NULL;
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   GfxColorSpace::setupColorProfiles();
   XYZ2DisplayTransformRelCol = NULL;
   XYZ2DisplayTransformAbsCol = NULL;
@@ -6585,7 +6545,7 @@ GfxState::~GfxState() {
   if (font) {
     font->decRefCnt();
   }
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (XYZ2DisplayTransformRelCol) {
     if (XYZ2DisplayTransformRelCol->unref() == 0)
       delete XYZ2DisplayTransformRelCol;
@@ -6641,7 +6601,7 @@ GfxState::GfxState(GfxState *state, GBool copyPath) {
     path = state->path->copy();
   }
   saved = NULL;
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   if (XYZ2DisplayTransformRelCol) {
     XYZ2DisplayTransformRelCol->ref();
   }
@@ -6660,7 +6620,7 @@ GfxState::GfxState(GfxState *state, GBool copyPath) {
 #endif
 }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
 void GfxState::setDisplayProfile(cmsHPROFILE localDisplayProfileA) {
   if (localDisplayProfile != NULL) {
     cmsCloseProfile(localDisplayProfile);

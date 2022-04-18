@@ -75,7 +75,7 @@ public:
 
   // Constructor.
   OutputDev() 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
  : iccColorSpaceCache(5)
 #endif
   {
@@ -351,7 +351,7 @@ public:
   virtual void setVectorAntialias(GBool /*vaa*/) {}
 #endif
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   PopplerCache *getIccColorSpaceCache();
 #endif
 
@@ -361,7 +361,7 @@ private:
   double defICTM[6];		// inverse of default CTM
   GooHash *profileHash;
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   PopplerCache iccColorSpaceCache;
 #endif
 };

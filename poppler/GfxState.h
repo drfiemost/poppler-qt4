@@ -268,7 +268,7 @@ public:
   // Return the name of the <idx>th color space mode.
   static const char *getColorSpaceModeName(int idx);
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   static int setupColorProfiles();
   // displayProfileA should be a cmsHPROFILE 
   static void setDisplayProfile(void *displayProfileA);
@@ -357,7 +357,7 @@ private:
   double gamma;			    // gamma value
   double kr, kg, kb;		    // gamut mapping mulitpliers
   void getXYZ(GfxColor *color, double *pX, double *pY, double *pZ);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   GfxColorTransform *transform;
 #endif
 };
@@ -439,7 +439,7 @@ private:
   double mat[9];		    // ABC -> XYZ transform matrix
   double kr, kg, kb;		    // gamut mapping mulitpliers
   void getXYZ(GfxColor *color, double *pX, double *pY, double *pZ);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   GfxColorTransform *transform;
 #endif
 };
@@ -520,7 +520,7 @@ private:
   double aMin, aMax, bMin, bMax;    // range for the a and b components
   double kr, kg, kb;		    // gamut mapping mulitpliers
   void getXYZ(GfxColor *color, double *pX, double *pY, double *pZ);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   GfxColorTransform *transform;
 #endif
 };
@@ -571,7 +571,7 @@ private:
   double rangeMin[4];		// min values for each component
   double rangeMax[4];		// max values for each component
   Ref iccProfileStream;		// the ICC profile
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   int getIntent() { return (transform != NULL) ? transform->getIntent() : 0; }
   GfxColorTransform *transform;
   GfxColorTransform *lineTransform; // color transform for line
@@ -1557,7 +1557,7 @@ public:
   void setRenderingIntent(const char *intent)
     { strncpy(renderingIntent, intent, 31); }
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   void setDisplayProfile(void *localDisplayProfileA);
   void *getDisplayProfile() { return localDisplayProfile; }
   GfxColorTransform *getXYZ2DisplayTransform();
@@ -1656,7 +1656,7 @@ private:
 
   GfxState(GfxState *state, GBool copyPath);
 
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   void *localDisplayProfile;
   int displayProfileRef;
   GfxColorTransform *XYZ2DisplayTransformRelCol;

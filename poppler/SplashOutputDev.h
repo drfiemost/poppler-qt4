@@ -415,7 +415,7 @@ private:
 			  GBool dropEmptySubpaths);
   void drawType3Glyph(GfxState *state, T3FontCache *t3Font,
 		      T3FontCacheTag *tag, Guchar *data);
-#ifdef USE_CMS
+#ifdef ENABLE_LCMS2
   GBool useIccImageSrc(void *data);
   static void iccTransform(void *data, SplashBitmap *bitmap);
   static GBool iccImageSrc(void *data, SplashColorPtr colorLine,

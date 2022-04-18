@@ -47,12 +47,8 @@
 #include "poppler-private.h"
 #include "poppler-page-private.h"
 
-#if defined(USE_CMS)
-#if defined(USE_LCMS1)
-#include <lcms.h>
-#else
+#if defined(ENABLE_LCMS2)
 #include <lcms2.h>
-#endif
 #endif
 
 namespace Poppler {
@@ -632,7 +628,7 @@ namespace Poppler {
     
     void Document::setColorDisplayProfile(void* outputProfileA)
     {
-#if defined(USE_CMS)
+#if defined(ENABLE_LCMS2)
         GfxColorSpace::setDisplayProfile((cmsHPROFILE)outputProfileA);
 #else
         Q_UNUSED(outputProfileA);
@@ -641,7 +637,7 @@ namespace Poppler {
 
     void Document::setColorDisplayProfileName(const QString &name)
     {
-#if defined(USE_CMS)
+#if defined(ENABLE_LCMS2)
         GooString *profileName = QStringToGooString( name );
         GfxColorSpace::setDisplayProfileName(profileName);
         delete profileName;
@@ -652,7 +648,7 @@ namespace Poppler {
 
     void* Document::colorRgbProfile() const
     {
-#if defined(USE_CMS)
+#if defined(ENABLE_LCMS2)
         return (void*)GfxColorSpace::getRGBProfile();
 #else
         return NULL;
@@ -661,7 +657,7 @@ namespace Poppler {
 
     void* Document::colorDisplayProfile() const
     {
-#if defined(USE_CMS)
+#if defined(ENABLE_LCMS2)
        return (void*)GfxColorSpace::getDisplayProfile();
 #else
        return NULL;
@@ -832,7 +828,7 @@ namespace Poppler {
 
     bool isCmsAvailable()
     {
-#if defined(USE_CMS)
+#if defined(ENABLE_LCMS2)
         return true;
 #else
         return false;
