@@ -14,10 +14,6 @@ add_definitions(
 
 configure_file(poppler-features.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/poppler-features.h @ONLY)
 
-if (GTK_FOUND AND BUILD_GTK_TESTS)
-  add_subdirectory(demo)
-endif ()
-
 set(poppler_glib_public_headers
   poppler-action.h
   poppler-date.h

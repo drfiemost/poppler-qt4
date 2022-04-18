@@ -15,33 +15,6 @@ if (ENABLE_SPLASH)
 
 endif ()
 
-if (GTK_FOUND)
-
-  add_definitions(${GTK3_CFLAGS})
-
-  include_directories(
-    ${CMAKE_SOURCE_DIR}/glib
-    ${CMAKE_BINARY_DIR}/glib
-  )
-
-  set (gtk_splash_test_SRCS
-    gtk-test.cc
-  )
-  poppler_add_test(gtk-test BUILD_GTK_TESTS ${gtk_splash_test_SRCS})
-  target_link_libraries(gtk-test ${CAIRO_LIBRARIES} poppler-glib ${GTK3_LIBRARIES})
-
-  if (HAVE_CAIRO)
-
-    set (pdf_inspector_SRCS
-      pdf-inspector.cc
-    )
-    poppler_add_test(pdf-inspector BUILD_GTK_TESTS ${pdf_inspector_SRCS})
-    target_link_libraries(pdf-inspector ${CAIRO_LIBRARIES} poppler-glib ${GTK3_LIBRARIES})
-
-  endif ()
-
-endif ()
-
 set (pdf_fullrewrite_SRCS
   pdf-fullrewrite.cc
   parseargs.cc
