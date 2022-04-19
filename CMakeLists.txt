@@ -1,6 +1,9 @@
 project(poppler)
 
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+
+set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
@@ -24,24 +27,15 @@ CHECK_FILE_OFFSET_BITS()
 
 include(GNUInstallDirs)
 
-find_package (ECM 1.6.0 QUIET NO_MODULE)
-if (ECM_FOUND)
-    include("${ECM_MODULE_DIR}/ECMEnableSanitizers.cmake")
-endif()
-
 set(POPPLER_MAJOR_VERSION "0")
 set(POPPLER_MINOR_VERSION "61")
 set(POPPLER_MICRO_VERSION "1")
 set(POPPLER_VERSION "${POPPLER_MAJOR_VERSION}.${POPPLER_MINOR_VERSION}.${POPPLER_MICRO_VERSION}")
 
-set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_CXX_EXTENSIONS OFF)
-
 # command line switches
 option(BUILD_QT4_TESTS "Whether compile the Qt4 test programs." ON)
 option(ENABLE_SPLASH "Build the Splash graphics backend." ON)
 option(ENABLE_GTK_DOC "Whether to generate glib API documentation." OFF)
-option(ENABLE_QT4 "Compile poppler qt4 wrapper." ON)
 set(ENABLE_LIBOPENJPEG "openjpeg2" CACHE STRING "Use libopenjpeg for JPX streams. Possible values: openjpeg2, unmaintained, none. 'unmaintained' gives you the internal unmaintained decoder. Use at your own risk. 'none' compiles no JPX decoder at all. Default: openjpeg2")
 set(ENABLE_LCMS2 "Use lcms2 color management system." ON)
 set(ENABLE_DCTDECODER "libjpeg" CACHE STRING "Use libjpeg for DCT streams. Possible values: libjpeg, unmaintained, none. will use libjpeg if available or fail if not. 'unmaintained' gives you the internal unmaintained decoder. Use at your own risk. 'none' compiles no DCT decoder at all. Default: libjpeg")
@@ -135,12 +129,7 @@ else()
   message(FATAL_ERROR "Invalid ENABLE_DCTDECODER value.")
 endif()
 
-if (ENABLE_QT4)
-  macro_optional_find_package(Qt4)
-  if (NOT QT4_FOUND)
-    set(ENABLE_QT4 OFF)
-  endif()
-endif()
+find_package(Qt4)
 
 macro_optional_find_package(Cairo ${CAIRO_VERSION})
 if(CAIRO_FOUND)
@@ -461,9 +450,7 @@ if(CMAKE_USE_PTHREADS_INIT)
 endif()
 
 add_subdirectory(test)
-if(ENABLE_QT4)
-  add_subdirectory(qt4)
-endif()
+add_subdirectory(qt4)
 
 set(PKG_CONFIG_VERSION_0_18 TRUE)
 if(PKG_CONFIG_EXECUTABLE)
@@ -478,9 +465,7 @@ else()
   set(PC_REQUIRES_PRIVATE "")
 endif()
 
-if(ENABLE_QT4)
-  poppler_create_install_pkgconfig(poppler-qt4.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
+poppler_create_install_pkgconfig(poppler-qt4.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 
 message("Building Poppler with support for:")
@@ -490,7 +475,6 @@ if(SPLASH_CMYK)
   message("      with CMYK support")
 endif()
 show_end_message_yesno("cairo output" CAIRO_FOUND)
-show_end_message_yesno("qt4 wrapper" ENABLE_QT4)
 show_end_message_yesno("  gtk-doc" ENABLE_GTK_DOC)
 show_end_message_yesno("use libjpeg" ENABLE_LIBJPEG)
 show_end_message_yesno("use libpng" ENABLE_LIBPNG)
