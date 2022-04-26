@@ -551,7 +551,11 @@ bool Page::search(const QString &text, QRectF &rect, SearchDirection direction, 
   sRight = rect.right();
   sBottom = rect.bottom();
 
-  bool found = search(text, sLeft, sTop, sRight, sBottom, direction, caseSensitive, rotate);
+  SearchFlags flags = 0;
+  if (caseSensitive == Page::CaseInsensitive)
+      flags = SearchFlag::IgnoreCase;
+
+  bool found = search(text, sLeft, sTop, sRight, sBottom, direction, flags, rotate);
 
   rect.setLeft( sLeft );
   rect.setTop( sTop );
