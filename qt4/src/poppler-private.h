@@ -159,18 +159,11 @@ namespace Poppler {
 			isSubset = false;
 			type = FontInfo::unknown;
 		}
-		
-		FontInfoData( const FontInfoData &fid )
-		{
-			fontName = fid.fontName;
-			fontFile = fid.fontFile;
-			isEmbedded = fid.isEmbedded;
-			isSubset = fid.isSubset;
-			type = fid.type;
-			embRef = fid.embRef;
-		}
-		
-		FontInfoData( ::FontInfo* fi )
+
+		FontInfoData(const FontInfoData &fid) = default;
+		FontInfoData &operator=(const FontInfoData &) = default;
+
+		explicit FontInfoData( ::FontInfo* fi )
 		{
 			if (fi->getName()) fontName = fi->getName()->getCString();
 			if (fi->getFile()) fontFile = fi->getFile()->getCString();
