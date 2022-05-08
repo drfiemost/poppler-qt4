@@ -81,4 +81,4 @@ void ThumbnailsDock::slotItemActivated(QListWidgetItem *item)
     setPage(item->data(PageRole).toInt());
 }
 
-#include "thumbnails.moc"
+#include "moc_thumbnails.cpp"

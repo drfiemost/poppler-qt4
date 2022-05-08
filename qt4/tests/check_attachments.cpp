@@ -153,5 +153,5 @@ void TestAttachments::checkAttach4()
 }
 
 QTEST_MAIN(TestAttachments)
-#include "check_attachments.moc"
+#include "moc_check_attachments.cpp"
 

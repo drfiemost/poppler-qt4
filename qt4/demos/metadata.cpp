@@ -47,4 +47,4 @@ void MetadataDock::documentClosed()
     AbstractInfoDock::documentClosed();
 }
 
-#include "metadata.moc"
+#include "moc_metadata.cpp"

@@ -39,5 +39,5 @@ void TestPageLabelInfo::testFromLatin()
 }
 
 QTEST_MAIN(TestPageLabelInfo)
-#include "check_pagelabelinfo.moc"
+#include "moc_check_pagelabelinfo.cpp"
 

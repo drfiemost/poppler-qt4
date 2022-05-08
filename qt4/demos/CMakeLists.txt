@@ -23,6 +23,6 @@ set(poppler_qt4viewer_SRCS
   toc.cpp
   viewer.cpp
 )
-qt4_automoc(${poppler_qt4viewer_SRCS})
+set(CMAKE_AUTOMOC ON)
 poppler_add_test(poppler_qt4viewer BUILD_QT4_TESTS ${poppler_qt4viewer_SRCS})
 target_link_libraries(poppler_qt4viewer poppler-qt4)

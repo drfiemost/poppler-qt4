@@ -171,5 +171,5 @@ void TestSearch::testWholeWordsOnly()
 }
 
 QTEST_MAIN(TestSearch)
-#include "check_search.moc"
+#include "moc_check_search.cpp"
 

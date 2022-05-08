@@ -244,5 +244,5 @@ void TestFontsData::checkScanForFonts()
 }
 
 QTEST_MAIN(TestFontsData)
-#include "check_fonts.moc"
+#include "moc_check_fonts.cpp"
 

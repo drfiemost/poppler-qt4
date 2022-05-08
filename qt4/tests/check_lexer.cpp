@@ -103,5 +103,5 @@ void TestLexer::testNumbers()
 }
 
 QTEST_MAIN(TestLexer)
-#include "check_lexer.moc"
+#include "moc_check_lexer.cpp"
 

@@ -316,4 +316,4 @@ int PdfViewer::page() const
     return m_currentPage;
 }
 
-#include "viewer.moc"
+#include "moc_viewer.cpp"

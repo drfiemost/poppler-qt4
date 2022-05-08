@@ -139,4 +139,4 @@ void TestDateConv::checkInvalidDates()
 
 QTEST_MAIN(TestDateConv)
 
-#include "check_dateConversion.moc"
+#include "moc_check_dateConversion.cpp"

@@ -98,4 +98,4 @@ void PageView::slotRotationChanged(int value)
     reloadPage();
 }
 
-#include "pageview.moc"
+#include "moc_pageview.cpp"

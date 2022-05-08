@@ -63,4 +63,4 @@ void PermissionsDock::documentClosed()
     AbstractInfoDock::documentClosed();
 }
 
-#include "permissions.moc"
+#include "moc_permissions.cpp"

@@ -247,4 +247,4 @@ GooString* TestStrings::newGooString(const char *s, int l)
 
 QTEST_MAIN(TestStrings)
 
-#include "check_strings.moc"
+#include "moc_check_strings.cpp"

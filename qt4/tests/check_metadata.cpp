@@ -271,5 +271,5 @@ void TestMetaData::checkNoPdfId()
 }
 
 QTEST_MAIN(TestMetaData)
-#include "check_metadata.moc"
+#include "moc_check_metadata.cpp"
 

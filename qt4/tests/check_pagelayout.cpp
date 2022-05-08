@@ -45,5 +45,5 @@ void TestPageLayout::checkFacing()
 }
 
 QTEST_MAIN(TestPageLayout)
-#include "check_pagelayout.moc"
+#include "moc_check_pagelayout.cpp"
 

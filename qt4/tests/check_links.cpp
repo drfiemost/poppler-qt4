@@ -95,4 +95,4 @@ void TestLinks::checkDests_xr02()
 
 QTEST_MAIN(TestLinks)
 
-#include "check_links.moc"
+#include "moc_check_links.cpp"

@@ -453,4 +453,4 @@ namespace Poppler
   }
 }
 
-#include "poppler-optcontent.moc"
+#include "moc_poppler-optcontent.cpp"

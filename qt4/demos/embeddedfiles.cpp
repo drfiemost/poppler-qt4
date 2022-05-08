@@ -79,4 +79,4 @@ void EmbeddedFilesDock::documentClosed()
     AbstractInfoDock::documentClosed();
 }
 
-#include "embeddedfiles.moc"
+#include "moc_embeddedfiles.cpp"

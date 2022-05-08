@@ -85,4 +85,4 @@ void TocDock::documentClosed()
     AbstractInfoDock::documentClosed();
 }
 
-#include "toc.moc"
+#include "moc_toc.cpp"

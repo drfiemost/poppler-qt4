@@ -1,4 +1,5 @@
-add_definitions(${QT4_DEFINITIONS})
+
+set(CMAKE_AUTOMOC ON)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -28,14 +29,14 @@ set(poppler_qt4_SRCS
   poppler-media.cc
   ArthurOutputDev.cc
 )
-qt4_automoc(${poppler_qt4_SRCS})
+
 add_library(poppler-qt4 SHARED ${poppler_qt4_SRCS})
 set_target_properties(poppler-qt4 PROPERTIES VERSION 4.11.0 SOVERSION 4)
 if(MINGW)
     get_target_property(POPPLER_QT4_SOVERSION poppler-qt4 SOVERSION)
     set_target_properties(poppler-qt4 PROPERTIES SUFFIX "-${POPPLER_QT4_SOVERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 endif()
-target_link_libraries(poppler-qt4 poppler ${QT4_QTCORE_LIBRARY} ${QT4_QTGUI_LIBRARY} ${QT4_QTXML_LIBRARY} ${poppler_LIBS})
+target_link_libraries(poppler-qt4 poppler Qt4::QtCore Qt4::QtGui Qt4::QtXml ${poppler_LIBS})
 install(TARGETS poppler-qt4
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
