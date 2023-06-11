@@ -218,6 +218,8 @@ void FoFiType1::parse() {
   char *tokptr;
   GBool gotMatrix, continueLine;
 
+  firstLine = nullptr;
+
   gotMatrix = gFalse;
   for (i = 1, line = (char *)file;
        i <= 100 && line && (!name || !encoding);
