@@ -3951,6 +3951,8 @@ void LinkAnnotation::store( QDomNode & node, QDomDocument & document ) const
             }
             case Poppler::Link::None:
                 break;
+            default:
+                break;
         }
     }
 }
