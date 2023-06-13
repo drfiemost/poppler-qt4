@@ -53,7 +53,11 @@ CurlCachedFileLoader::init(GooString *urlA, CachedFile *cachedFileA)
   curl_easy_perform(curl);
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
   if (code) {
+#if LIBCURL_VERSION_NUM >= 0x075500
+     curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &contentLength);
+#else
      curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &contentLength);
+#endif
      size = contentLength;
   } else {
      error(errInternal, -1, "Failed to get size of '{0:t}'.", url);
