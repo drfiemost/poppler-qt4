@@ -3402,7 +3402,7 @@ GBool JPXStream::readNBytes(int nBytes, GBool signd, int *x) {
   }
   if (signd) {
     if (y & (1 << (8 * nBytes - 1))) {
-      y |= -1 << (8 * nBytes);
+      y |= 0xFFFFFFFF << (8 * nBytes);
     }
   }
   *x = y;
