@@ -13,7 +13,7 @@ macro(QT4_ADD_SIMPLETEST exe source)
   set(${test_name}_SOURCES
     ${source}
   )
-  poppler_add_test(${exe} BUILD_QT4_TESTS ${${test_name}_SOURCES})
+  poppler_add_test(${exe} BUILD_TESTS ${${test_name}_SOURCES})
   target_link_libraries(${exe} poppler-qt4)
   if(MSVC)
     target_link_libraries(${exe} poppler ${poppler_LIBS})
@@ -26,7 +26,7 @@ macro(QT4_ADD_QTEST exe source)
     set(${test_name}_SOURCES
       ${source}
     )
-    poppler_add_unittest(${exe} BUILD_QT4_TESTS ${${test_name}_SOURCES})
+    poppler_add_unittest(${exe} BUILD_TESTS ${${test_name}_SOURCES})
     set(CMAKE_AUTOMOC ON)
     target_link_libraries(${exe} poppler-qt4 ${QT4_QTTEST_LIBRARY})
     if(MSVC)

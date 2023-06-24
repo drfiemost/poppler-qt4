@@ -38,7 +38,7 @@ set(POPPLER_MICRO_VERSION "1")
 set(POPPLER_VERSION "${POPPLER_MAJOR_VERSION}.${POPPLER_MINOR_VERSION}.${POPPLER_MICRO_VERSION}")
 
 # command line switches
-option(BUILD_QT4_TESTS "Whether compile the Qt4 test programs." ON)
+option(BUILD_TESTS "Whether compile the Qt4 test programs." OFF)
 option(ENABLE_SPLASH "Build the Splash graphics backend." ON)
 option(ENABLE_GTK_DOC "Whether to generate glib API documentation." OFF)
 set(ENABLE_LIBOPENJPEG "openjpeg2" CACHE STRING "Use libopenjpeg for JPX streams. Possible values: openjpeg2, unmaintained, none. 'unmaintained' gives you the internal unmaintained decoder. Use at your own risk. 'none' compiles no JPX decoder at all. Default: openjpeg2")
@@ -448,7 +448,9 @@ if(CMAKE_USE_PTHREADS_INIT)
    target_link_libraries(poppler LINK_PRIVATE Threads::Threads)
 endif()
 
-add_subdirectory(test)
+if(BUILD_TESTS)
+    add_subdirectory(test)
+endif(BUILD_TESTS)
 add_subdirectory(qt4)
 
 poppler_create_install_pkgconfig(poppler-qt4.pc ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
