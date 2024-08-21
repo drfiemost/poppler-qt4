@@ -372,11 +372,6 @@ class POPPLER_QT4_EXPORT Annotation
     /// \warning Currently does nothing \since 0.20
     void setPopup( const Popup& popup );
 
-    /// \cond PRIVATE
-    // This field is deprecated and not used any more. Use popup
-    Q_DECL_DEPRECATED struct { int width, height; } window; // Always set to zero
-    /// \endcond
-
     /// \since 0.20
     RevScope revisionScope() const; // Root
 

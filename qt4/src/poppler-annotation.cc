@@ -1061,7 +1061,6 @@ void Annotation::Popup::setText( const QString &text )
 Annotation::Annotation( AnnotationPrivate &dd )
     : d_ptr( &dd )
 {
-    window.width = window.height = 0;
 }
 
 Annotation::~Annotation()
@@ -1072,8 +1071,6 @@ Annotation::Annotation( AnnotationPrivate &dd, const QDomNode &annNode )
     : d_ptr( &dd )
 {
     Q_D( Annotation );
-
-    window.width = window.height = 0;
 
     // get the [base] element of the annotation node
     QDomElement e = AnnotationUtils::findChildElement( annNode, "base" );
