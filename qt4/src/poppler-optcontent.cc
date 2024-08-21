@@ -34,6 +34,8 @@
 #include "poppler/OptionalContent.h"
 #include "poppler/Link.h"
 
+#include <algorithm>
+
 namespace Poppler
 {
 
@@ -362,7 +364,7 @@ namespace Poppler
           Q_FOREACH (OptContentItem *item, changedItems) {
             indexes.append(d->indexFromItem(item, 0));
           }
-          qStableSort(indexes);
+          std::stable_sort(indexes.begin(), indexes.end());
           Q_FOREACH (const QModelIndex &changedIndex, indexes) {
             emit dataChanged(changedIndex, changedIndex);
           }
@@ -426,7 +428,7 @@ namespace Poppler
       Q_FOREACH (OptContentItem *item, changedItems) {
         indexes.append(d->indexFromItem(item, 0));
       }
-      qStableSort(indexes);
+      std::stable_sort(indexes.begin(), indexes.end());
       Q_FOREACH (const QModelIndex &changedIndex, indexes) {
         emit dataChanged(changedIndex, changedIndex);
       }
