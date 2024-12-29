@@ -93,7 +93,7 @@ namespace Poppler {
 		doc = new PDFDoc(fileName, length, ownerPassword, userPassword);
 		delete[] fileName;
 #else
-		GooString *fileName = new GooString(QFile::encodeName(filePath));
+		GooString *fileName = new GooString(QFile::encodeName(filePath).constData());
 		doc = new PDFDoc(fileName, ownerPassword, userPassword);
 #endif
 
@@ -187,7 +187,7 @@ namespace Poppler {
 		FontIteratorData( int startPage, DocumentData *dd )
 		  : fontInfoScanner( dd->doc, startPage )
 		  , totalPages( dd->doc->getNumPages() )
-		  , currentPage( qMax( startPage, 0 ) - 1 )
+		  , currentPage( std::max( startPage, 0 ) - 1 )
 		{
 		}
 

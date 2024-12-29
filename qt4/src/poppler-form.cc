@@ -79,9 +79,9 @@ FormField::FormField(FormFieldData &dd)
     MTX[i+1] = gfxCTM[i+1] / pageHeight;
   }
   QPointF topLeft;
-  XPDFReader::transform( MTX, qMin( left, right ), qMax( top, bottom ), topLeft );
+  XPDFReader::transform( MTX, std::min( left, right ), std::max( top, bottom ), topLeft );
   QPointF bottomRight;
-  XPDFReader::transform( MTX, qMax( left, right ), qMin( top, bottom ), bottomRight );
+  XPDFReader::transform( MTX, std::max( left, right ), std::min( top, bottom ), bottomRight );
   m_formData->box = QRectF(topLeft, QSizeF(bottomRight.x() - topLeft.x(), bottomRight.y() - topLeft.y()));
 }
 

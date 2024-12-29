@@ -110,7 +110,7 @@ int XPDFReader::lookupNumArray( Dict * dict, char * type, double * dest, int len
         return 0;
     if ( arrObj.isArray() )
     {
-        len = qMin( len, arrObj.arrayGetLength() );
+        len = std::min( len, arrObj.arrayGetLength() );
         for ( int i = 0; i < len; i++ )
         {
             Object numObj = arrObj.arrayGet( i );

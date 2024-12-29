@@ -55,8 +55,8 @@ void ThumbnailsDock::fillInfo()
             item->setData(Qt::DecorationRole, QPixmap::fromImage(image));
             item->setData(PageRole, i);
             m_list->addItem(item);
-            maxSize.setWidth(qMax(maxSize.width(), image.width()));
-            maxSize.setHeight(qMax(maxSize.height(), image.height()));
+            maxSize.setWidth(std::max(maxSize.width(), image.width()));
+            maxSize.setHeight(std::max(maxSize.height(), image.height()));
         }
         delete page;
     }
