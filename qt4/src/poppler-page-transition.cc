@@ -64,11 +64,6 @@ PageTransition::Type PageTransition::type() const
   return (Poppler::PageTransition::Type)data->pt->getType();
 }
 
-int PageTransition::duration() const
-{
-  return data->pt->getDuration();
-}
-
 double PageTransition::durationReal() const
 {
   return data->pt->getDuration();

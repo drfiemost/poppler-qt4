@@ -110,13 +110,6 @@ class POPPLER_QT4_EXPORT PageTransition {
      \brief Get type of the transition.
   */
   Type type() const;
-  
-  /**
-     \brief Get duration of the transition in seconds as integer
-
-     \deprecated This function is left for backward compatibility, use durationReal() instead.
-  */
-  Q_DECL_DEPRECATED int duration() const;
 
   /**
      \brief Get duration of the transition in seconds

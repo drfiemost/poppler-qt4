@@ -574,13 +574,6 @@ delete it;
 			       PreviousResult  ///< Find the previous result, moving "up the page"
 	};
 
-	/**
-	   The type of search to perform
-	*/
-	enum SearchMode { CaseSensitive,   ///< Case differences cause no match in searching
-			  CaseInsensitive  ///< Case differences are ignored in matching
-	};
-
         /**
            Flags to modify the search behaviour \since 0.31
         */
@@ -590,31 +583,6 @@ delete it;
             WholeWords = 0x00000002    ///< Only whole words are matched
         };
         Q_DECLARE_FLAGS( SearchFlags, SearchFlag )
-	
-	/**
-	   Returns true if the specified text was found.
-
-	   \param text the text the search
-	   \param rect in all directions is used to return where the text was found, for NextResult and PreviousResult
-	               indicates where to continue searching for
-	   \param direction in which direction do the search
-	   \param caseSensitive be case sensitive?
-	   \param rotate the rotation to apply for the search order
-	**/
-	Q_DECL_DEPRECATED bool search(const QString &text, QRectF &rect, SearchDirection direction, SearchMode caseSensitive, Rotation rotate = Rotate0) const;
-	
-	/**
-	   Returns true if the specified text was found.
-
-	   \param text the text the search
-	   \param rectXXX in all directions is used to return where the text was found, for NextResult and PreviousResult
-	               indicates where to continue searching for
-	   \param direction in which direction do the search
-	   \param caseSensitive be case sensitive?
-	   \param rotate the rotation to apply for the search order
-	   \since 0.14
-	**/
-        Q_DECL_DEPRECATED bool search(const QString &text, double &rectLeft, double &rectTop, double &rectRight, double &rectBottom, SearchDirection direction, SearchMode caseSensitive, Rotation rotate = Rotate0) const;
 
         /**
            Returns true if the specified text was found.
@@ -629,19 +597,6 @@ delete it;
            \since 0.31
         **/
         bool search(const QString &text, double &rectLeft, double &rectTop, double &rectRight, double &rectBottom, SearchDirection direction, SearchFlags flags = 0, Rotation rotate = Rotate0) const;
-	
-	/**
-	   Returns a list of all occurrences of the specified text on the page.
-	   
-	   \param text the text to search
-	   \param caseSensitive whether to be case sensitive
-	   \param rotate the rotation to apply for the search order
-	   
-	   \warning Do not use the returned QRectF as arguments of another search call because of truncation issues if qreal is defined as float.
-	   
-	   \since 0.22
-	**/
-        Q_DECL_DEPRECATED QList<QRectF> search(const QString &text, SearchMode caseSensitive, Rotation rotate = Rotate0) const;
 
         /**
            Returns a list of all occurrences of the specified text on the page.
@@ -1305,15 +1260,6 @@ QString subject = m_doc->info("Subject");
 	   The version of the PDF specification that the document
 	   conforms to
 
-	   \deprecated use getPdfVersion and avoid float point
-	   comparisons/handling
-	*/
-	Q_DECL_DEPRECATED double pdfVersion() const;
-
-	/**
-	   The version of the PDF specification that the document
-	   conforms to
-
 	   \param major an optional pointer to a variable where store the
 	   "major" number of the version
 	   \param minor an optional pointer to a variable where store the
@@ -1335,26 +1281,6 @@ QString subject = m_doc->info("Subject");
 	   \see newFontIterator()
 	*/
 	QList<FontInfo> fonts() const;
-
-	/**
-	   Scans for fonts within the PDF document.
-
-	   \param numPages the number of pages to scan
-	   \param fontList pointer to the list where the font information
-	   should be placed
-
-	   \note with this method you can scan for fonts only \em once for each
-	   document; once the end is reached, no more scanning with this method
-	   can be done
-
-	   \return false if the end of the document has been reached
-
-	   \deprecated this function is quite limited in its job (see note),
-	   better use fonts() or newFontIterator()
-
-	   \see fonts(), newFontIterator()
-	*/
-	Q_DECL_DEPRECATED bool scanForFonts( int numPages, QList<FontInfo> *fontList ) const;
 
 	/**
 	   Creates a new FontIterator object for font scanning.

@@ -514,20 +514,6 @@ QString Page::text(const QRectF &r) const
   return text(r, PhysicalLayout);
 }
 
-bool Page::search(const QString &text, double &sLeft, double &sTop, double &sRight, double &sBottom, SearchDirection direction, SearchMode caseSensitive, Rotation rotate) const
-{
-  const GBool sCase = caseSensitive == Page::CaseSensitive ? gTrue : gFalse;
-
-  QVector<Unicode> u;
-  TextPage *textPage = m_page->prepareTextSearch(text, rotate, &u);
-
-  const bool found = m_page->performSingleTextSearch(textPage, u, sLeft, sTop, sRight, sBottom, direction, sCase, gFalse);
-
-  textPage->decRefCnt();
-
-  return found;
-}
-
 bool Page::search(const QString &text, double &sLeft, double &sTop, double &sRight, double &sBottom, SearchDirection direction, SearchFlags flags, Rotation rotate) const
 {
   const GBool sCase = flags.testFlag(IgnoreCase) ? gFalse : gTrue;
@@ -541,42 +527,6 @@ bool Page::search(const QString &text, double &sLeft, double &sTop, double &sRig
   textPage->decRefCnt();
 
   return found;
-}
-
-bool Page::search(const QString &text, QRectF &rect, SearchDirection direction, SearchMode caseSensitive, Rotation rotate) const
-{
-  double sLeft, sTop, sRight, sBottom;
-  sLeft = rect.left();
-  sTop = rect.top();
-  sRight = rect.right();
-  sBottom = rect.bottom();
-
-  SearchFlags flags = 0;
-  if (caseSensitive == Page::CaseInsensitive)
-      flags = SearchFlag::IgnoreCase;
-
-  bool found = search(text, sLeft, sTop, sRight, sBottom, direction, flags, rotate);
-
-  rect.setLeft( sLeft );
-  rect.setTop( sTop );
-  rect.setRight( sRight );
-  rect.setBottom( sBottom );
-
-  return found;
-}
-
-QList<QRectF> Page::search(const QString &text, SearchMode caseSensitive, Rotation rotate) const
-{
-  const GBool sCase = caseSensitive == Page::CaseSensitive ? gTrue : gFalse;
-
-  QVector<Unicode> u;
-  TextPage *textPage = m_page->prepareTextSearch(text, rotate, &u);
-
-  const QList<QRectF> results = m_page->performMultipleTextSearch(textPage, u, sCase, gFalse);
-  
-  textPage->decRefCnt();
-
-  return results;
 }
 
 QList<QRectF> Page::search(const QString &text, SearchFlags flags, Rotation rotate) const
