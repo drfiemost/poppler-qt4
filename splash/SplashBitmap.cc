@@ -106,6 +106,8 @@ SplashBitmap::SplashBitmap(int widthA, int heightA, int rowPadA,
     }
     break;
 #endif
+  default:
+    rowSize = 0;
   }
   if (rowSize > 0) {
     rowSize += rowPad - 1;
