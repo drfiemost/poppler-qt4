@@ -1,6 +1,6 @@
 //========================================================================
 //
-// UTF8.h
+// UnicodeMapFuncs.h
 //
 // Copyright 2001-2003 Glyph & Cog, LLC
 //
@@ -56,7 +56,7 @@ static int mapUTF8(Unicode u, char *buf, int bufSize) {
   }
 }
 
-static int mapUCS2(Unicode u, char *buf, int bufSize) {
+static int mapUTF16(Unicode u, char *buf, int bufSize) {
   if (u <= 0xffff) {
     if (bufSize < 2) {
       return 0;
