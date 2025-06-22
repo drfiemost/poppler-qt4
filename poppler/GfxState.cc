@@ -29,6 +29,7 @@
 // Copyright (C) 2013 Fabio D'Urso <fabiodurso@hotmail.it>
 // Copyright (C) 2015 Adrian Johnson <ajohnson@redneon.com>
 // Copyright (C) 2016 Marek Kasik <mkasik@redhat.com>
+// Copyright (C) 2017 Oliver Sander <oliver.sander@tu-dresden.de>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -1518,34 +1519,44 @@ GfxColorSpace *GfxLabColorSpace::parse(Array *arr, GfxState *state) {
     return NULL;
   }
   cs = new GfxLabColorSpace();
+  bool ok = true;
   obj2 = obj1.dictLookup("WhitePoint");
   if (obj2.isArray() && obj2.arrayGetLength() == 3) {
     Object obj3 = obj2.arrayGet(0);
-    cs->whiteX = obj3.getNum();
+    cs->whiteX = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(1);
-    cs->whiteY = obj3.getNum();
+    cs->whiteY = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(2);
-    cs->whiteZ = obj3.getNum();
+    cs->whiteZ = obj3.getNum(&ok);
   }
   obj2 = obj1.dictLookup("BlackPoint");
   if (obj2.isArray() && obj2.arrayGetLength() == 3) {
     Object obj3 = obj2.arrayGet(0);
-    cs->blackX = obj3.getNum();
+    cs->blackX = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(1);
-    cs->blackY = obj3.getNum();
+    cs->blackY = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(2);
-    cs->blackZ = obj3.getNum();
+    cs->blackZ = obj3.getNum(&ok);
   }
   obj2 = obj1.dictLookup("Range");
   if (obj2.isArray() && obj2.arrayGetLength() == 4) {
     Object obj3 = obj2.arrayGet(0);
-    cs->aMin = obj3.getNum();
+    cs->aMin = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(1);
-    cs->aMax = obj3.getNum();
+    cs->aMax = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(2);
-    cs->bMin = obj3.getNum();
+    cs->bMin = obj3.getNum(&ok);
     obj3 = obj2.arrayGet(3);
-    cs->bMax = obj3.getNum();
+    cs->bMax = obj3.getNum(&ok);
+  }
+
+  if (!ok) {
+      error(errSyntaxWarning, -1, "Bad Lab color space");
+#ifdef ENABLE_LCMS2
+      cs->transform = nullptr;
+#endif
+      delete cs;
+      return nullptr;
   }
 
   cs->kr = 1 / (xyzrgb[0][0] * cs->whiteX +
