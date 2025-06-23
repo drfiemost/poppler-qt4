@@ -3,6 +3,7 @@
  * Copyright (C) 2008, 2011, 2012, 2015, 2017, Albert Astals Cid <aacid@kde.org>
  * Copyright (C) 2011 Carlos Garcia Campos <carlosgc@gnome.org>
  * Copyright (C) 2012, Adam Reichold <adamreichold@myopera.com>
+ * Copyright (C) 2018, Andre Heinecke <aheinecke@intevation.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -136,9 +137,25 @@ bool FormField::isReadOnly() const
   return m_formData->fm->isReadOnly();
 }
 
+void FormField::setReadOnly(bool value)
+{
+  m_formData->fm->setReadOnly(value);
+}
+
 bool FormField::isVisible() const
 {
   return !(m_formData->fm->getWidgetAnnotation()->getFlags() & Annot::flagHidden);
+}
+
+void FormField::setVisible(bool value)
+{
+  Guint flags = m_formData->fm->getWidgetAnnotation()->getFlags();
+  if (value) {
+    flags &= ~Annot::flagHidden;
+  } else {
+    flags |= Annot::flagHidden;
+  }
+  m_formData->fm->getWidgetAnnotation()->setFlags(flags);
 }
 
 Link* FormField::activationAction() const
