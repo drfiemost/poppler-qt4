@@ -544,7 +544,8 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
                 if (!wantScreenAnnotations)
                     continue;
                 AnnotScreen * screenann = static_cast< AnnotScreen * >( ann );
-                if (!screenann->getAction())
+                // TODO Support other link types than Link::Rendition in ScreenAnnotation
+                if (!screenann->getAction() || screenann->getAction()->getKind() != actionRendition)
                   continue;
                 ScreenAnnotation * s = new ScreenAnnotation();
                 annotation = s;
