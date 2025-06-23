@@ -1,7 +1,7 @@
 /* poppler-page.cc: qt interface to poppler
  * Copyright (C) 2005, Net Integration Technologies, Inc.
  * Copyright (C) 2005, Brad Hards <bradh@frogmouth.net>
- * Copyright (C) 2005-2017, Albert Astals Cid <aacid@kde.org>
+ * Copyright (C) 2005-2018, Albert Astals Cid <aacid@kde.org>
  * Copyright (C) 2005, Stefan Kebekus <stefan.kebekus@math.uni-koeln.de>
  * Copyright (C) 2006-2011, Pino Toscano <pino@kde.org>
  * Copyright (C) 2008 Carlos Garcia Campos <carlosgc@gnome.org>
@@ -369,11 +369,11 @@ QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h,
                                                rotation, false, true, false, x, y, w, h,
                                                NULL, NULL, NULL, NULL, gTrue);
 
-      SplashBitmap *bitmap = splash_output.getBitmap();
+      SplashBitmap *b = splash_output.getBitmap();
 
-      const int bw = bitmap->getWidth();
-      const int bh = bitmap->getHeight();
-      const int brs = bitmap->getRowSize();
+      const int bw = b->getWidth();
+      const int bh = b->getHeight();
+      const int brs = b->getRowSize();
 
       // If we use DeviceN8, convert to XBGR8.
       // If requested, also transfer Splash's internal alpha channel.
@@ -385,8 +385,8 @@ QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h,
               ? QImage::Format_ARGB32_Premultiplied
               : QImage::Format_RGB32;
 
-      if (bitmap->convertToXBGR(mode)) {
-          SplashColorPtr data = bitmap->getDataPtr();
+      if (b->convertToXBGR(mode)) {
+          SplashColorPtr data = b->getDataPtr();
 
           if (QSysInfo::ByteOrder == QSysInfo::BigEndian) {
               // Convert byte order from RGBX to XBGR.

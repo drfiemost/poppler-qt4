@@ -16,7 +16,7 @@
 //
 // Copyright (C) 2005-2008 Jeff Muizelaar <jeff@infidigm.net>
 // Copyright (C) 2005, 2006 Kristian Høgsberg <krh@redhat.com>
-// Copyright (C) 2005, 2009, 2012, 2017 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005, 2009, 2012, 2017, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2005 Nickolay V. Shmyrev <nshmyrev@yandex.ru>
 // Copyright (C) 2006-2011, 2013, 2014, 2017 Carlos Garcia Campos <carlosgc@gnome.org>
 // Copyright (C) 2008 Carl Worth <cworth@cworth.org>
@@ -1970,7 +1970,7 @@ CairoOutputDev::getFilterForSurface(cairo_surface_t *image,
 				    GBool interpolate)
 {
   if (interpolate)
-    return CAIRO_FILTER_BEST;
+    return CAIRO_FILTER_GOOD;
 
   int orig_width = cairo_image_surface_get_width (image);
   int orig_height = cairo_image_surface_get_height (image);
@@ -1990,7 +1990,7 @@ CairoOutputDev::getFilterForSurface(cairo_surface_t *image,
   if (scaled_width / orig_width >= 4 || scaled_height / orig_height >= 4)
 	  return CAIRO_FILTER_NEAREST;
 
-  return CAIRO_FILTER_BEST;
+  return CAIRO_FILTER_GOOD;
 }
 
 void CairoOutputDev::drawImageMask(GfxState *state, Object *ref, Stream *str,
@@ -2458,7 +2458,7 @@ void CairoOutputDev::drawImageMaskPrescaled(GfxState *state, Object *ref, Stream
    * cairo doesn't yet do minifaction filtering causing scaled down
    * images with CAIRO_FILTER_NEAREST to look really bad */
   cairo_pattern_set_filter (pattern,
-			    interpolate ? CAIRO_FILTER_BEST : CAIRO_FILTER_FAST);
+			    interpolate ? CAIRO_FILTER_GOOD : CAIRO_FILTER_FAST);
 
   if (state->getFillColorSpace()->getMode() == csPattern) {
     cairo_matrix_init_translate (&matrix, 0, scaledHeight);
@@ -3193,7 +3193,6 @@ public:
   }
 
   void getRow(int row_num, uint32_t *row_data) override {
-    int i;
     Guchar *pix;
 
     if (row_num <= current_row)
@@ -3214,7 +3213,7 @@ public:
       Guchar *p = pix;
       GfxRGB rgb;
 
-      for (i = 0; i < width; i++) {
+      for (int i = 0; i < width; i++) {
         rgb = lookup[*p];
         row_data[i] =
           ((int) colToByte(rgb.r) << 16) |
@@ -3259,7 +3258,7 @@ void CairoOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
   cairo_matrix_t matrix;
   int width, height;
   int scaledWidth, scaledHeight;
-  cairo_filter_t filter = CAIRO_FILTER_BEST;
+  cairo_filter_t filter = CAIRO_FILTER_GOOD;
   RescaleDrawImage rescale;
 
   LOG (printf ("drawImage %dx%d\n", widthA, heightA));

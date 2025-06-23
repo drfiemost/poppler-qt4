@@ -21,6 +21,7 @@ import os.path
 import subprocess
 import sys
 
+PY2 = sys.version_info[0] == 2
 
 class GTKDoc(object):
 
@@ -194,15 +195,22 @@ class GTKDoc(object):
 
         if print_output:
             if stdout:
+              if PY2:
                 try:
                     sys.stdout.write(stdout.encode("utf-8"))
                 except UnicodeDecodeError:
                     sys.stdout.write(stdout)
+              else:
+                  sys.stdout.write(stdout)
             if stderr:
+              if PY2:
                 try:
                     sys.stderr.write(stderr.encode("utf-8"))
                 except UnicodeDecodeError:
                     sys.stderr.write(stderr)
+              else:
+                  sys.stderr.write(stderr)
+
 
         if process.returncode != 0:
             raise Exception('%s produced a non-zero return code %i'
@@ -319,9 +327,9 @@ class GTKDoc(object):
             ldflags = ' "-L%s" %s ' % (self.library_path, additional_ldflags) + ldflags
             current_ld_library_path = env.get('LD_LIBRARY_PATH')
             if current_ld_library_path:
-                env['RUN'] = 'LD_LIBRARY_PATH="%s:%s" ' % (self.library_path, current_ld_library_path)
+                env['LD_LIBRARY_PATH'] = '%s:%s' % (self.library_path, current_ld_library_path)
             else:
-                env['RUN'] = 'LD_LIBRARY_PATH="%s" ' % self.library_path
+                env['LD_LIBRARY_PATH'] = self.library_path
 
         if ldflags:
             env['LDFLAGS'] = '%s %s' % (ldflags, env.get('LDFLAGS', ''))
