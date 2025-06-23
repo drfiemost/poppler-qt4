@@ -17,6 +17,7 @@
  * Copyright (C) 2015 William Bader <williambader@hotmail.com>
  * Copyright (C) 2016 Arseniy Lartsev <arseniy@alumni.chalmers.se>
  * Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
+ * Copyright (C) 2017, 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
