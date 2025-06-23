@@ -31,7 +31,7 @@ class PageView : public QScrollArea, public DocumentObserver
     Q_OBJECT
 
 public:
-    PageView(QWidget *parent = 0);
+    PageView(QWidget *parent = nullptr);
     ~PageView();
 
     /*virtual*/ void documentLoaded();

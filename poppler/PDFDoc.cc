@@ -115,19 +115,19 @@ void PDFDoc::init()
 #endif
   ok = gFalse;
   errCode = errNone;
-  fileName = NULL;
-  file = NULL;
-  str = NULL;
-  xref = NULL;
-  linearization = NULL;
-  catalog = NULL;
-  hints = NULL;
+  fileName = nullptr;
+  file = nullptr;
+  str = nullptr;
+  xref = nullptr;
+  linearization = nullptr;
+  catalog = nullptr;
+  hints = nullptr;
 #ifndef DISABLE_OUTLINE
-  outline = NULL;
+  outline = nullptr;
 #endif
   startXRefPos = -1;
-  secHdlr = NULL;
-  pageCache = NULL;
+  secHdlr = nullptr;
+  pageCache = nullptr;
 }
 
 PDFDoc::PDFDoc()
@@ -156,7 +156,7 @@ PDFDoc::PDFDoc(GooString *fileNameA, GooString *ownerPassword,
 
   // try to open file
   file = GooFile::open(fileName);
-  if (file == NULL) {
+  if (file == nullptr) {
     // fopen() has failed.
     // Keep a copy of the errno returned by fopen so that it can be 
     // referred to later.
@@ -232,9 +232,9 @@ PDFDoc::PDFDoc(BaseStream *strA, GooString *ownerPassword,
     fileNameU[n] = L'\0';
 #endif
   } else {
-    fileName = NULL;
+    fileName = nullptr;
 #ifdef _WIN32
-    fileNameU = NULL;
+    fileNameU = nullptr;
 #endif
   }
   str = strA;
@@ -290,7 +290,7 @@ GBool PDFDoc::setup(GooString *ownerPassword, GooString *userPassword) {
       // try one more time to contruct the Catalog, maybe the problem is damaged XRef 
       delete catalog;
       delete xref;
-      xref = new XRef(str, 0, 0, NULL, true);
+      xref = new XRef(str, 0, 0, nullptr, true);
       catalog = new Catalog(this);
     }
 
@@ -457,14 +457,14 @@ GBool PDFDoc::checkEncryption(GooString *ownerPassword, GooString *userPassword)
 std::vector<FormWidgetSignature*> PDFDoc::getSignatureWidgets()
 {
   int num_pages = getNumPages();
-  FormPageWidgets *page_widgets = NULL;
+  FormPageWidgets *page_widgets = nullptr;
   std::vector<FormWidgetSignature*> widget_vector;
 
   for (int i = 1; i <= num_pages; i++) {
     Page *p = getCatalog()->getPage(i);
     if (p) {
       page_widgets = p->getFormWidgets();
-      for (int j = 0; page_widgets != NULL && j < page_widgets->getNumWidgets(); j++) {
+      for (int j = 0; page_widgets != nullptr && j < page_widgets->getNumWidgets(); j++) {
 	if (page_widgets->getWidget(j)->getType() == formSignature) {
 	    widget_vector.push_back(static_cast<FormWidgetSignature*>(page_widgets->getWidget(j)));
 	}
@@ -530,7 +530,7 @@ void PDFDoc::displayPageSlice(OutputDev *out, int page,
 Links *PDFDoc::getLinks(int page) {
   Page *p = getPage(page);
   if (!p) {
-    return new Links (NULL);
+    return new Links (nullptr);
   }
   return p->getLinks();
 }
@@ -550,7 +550,7 @@ Linearization *PDFDoc::getLinearization()
 }
 
 GBool PDFDoc::checkLinearization() {
-  if (linearization == NULL)
+  if (linearization == nullptr)
     return gFalse;
   if (linearizationState == 1)
     return gTrue;
@@ -639,7 +639,7 @@ void PDFDoc::setDocInfoStringEntry(const char *key, GooString *value)
 GooString *PDFDoc::getDocInfoStringEntry(const char *key) {
   Object infoObj = getDocInfo();
   if (!infoObj.isDict()) {
-      return NULL;
+      return nullptr;
   }
 
   Object entryObj = infoObj.dictLookup(key);
@@ -649,7 +649,7 @@ GooString *PDFDoc::getDocInfoStringEntry(const char *key) {
   if (entryObj.isString()) {
     result = entryObj.takeString();
   } else {
-    result = NULL;
+    result = nullptr;
   }
 
   return result;
@@ -743,7 +743,7 @@ int PDFDoc::savePageAs(GooString *name, int pageNo)
     error(errInternal, -1, "Illegal pageNo: {0:d}({1:d})", pageNo, getNumPages() );
     return errOpenFile;
   }
-  PDFRectangle *cropBox = NULL;
+  PDFRectangle *cropBox = nullptr;
   if (getCatalog()->getPage(pageNo)->isCropped()) {
     cropBox = getCatalog()->getPage(pageNo)->getCropBox();
   }
@@ -762,7 +762,7 @@ int PDFDoc::savePageAs(GooString *name, int pageNo)
 
   yRef = new XRef(getXRef()->getTrailerDict());
 
-  if (secHdlr != NULL && !secHdlr->isUnencrypted()) {
+  if (secHdlr != nullptr && !secHdlr->isUnencrypted()) {
     yRef->setEncryption(secHdlr->getPermissionFlags(), 
       secHdlr->getOwnerPasswordOk(), fileKey, keyLength, secHdlr->getEncVersion(), secHdlr->getEncRevision(), encAlgorithm);
   }
@@ -833,7 +833,7 @@ int PDFDoc::savePageAs(GooString *name, int pageNo)
       if (j > 0) outStr->printf(" ");
       Object value = catDict->getValNF(j);
       outStr->printf("/%s ", key);
-      writeObject(&value, outStr, getXRef(), 0, NULL, cryptRC4, 0, 0, 0);
+      writeObject(&value, outStr, getXRef(), 0, nullptr, cryptRC4, 0, 0, 0);
     }
   }
   outStr->printf(">>\nendobj\n");
@@ -843,7 +843,7 @@ int PDFDoc::savePageAs(GooString *name, int pageNo)
   outStr->printf("<< /Type /Pages /Kids [ %d 0 R ] /Count 1 ", rootNum + 2);
   if (resourcesObj.isDict()) {
     outStr->printf("/Resources ");
-    writeObject(&resourcesObj, outStr, getXRef(), 0, NULL, cryptRC4, 0, 0, 0);
+    writeObject(&resourcesObj, outStr, getXRef(), 0, nullptr, cryptRC4, 0, 0, 0);
   }
   outStr->printf(">>\n");
   outStr->printf("endobj\n");
@@ -859,7 +859,7 @@ int PDFDoc::savePageAs(GooString *name, int pageNo)
       outStr->printf("/Parent %d 0 R", rootNum + 1);
     } else {
       outStr->printf("/%s ", key);
-      writeObject(&value, outStr, getXRef(), 0, NULL, cryptRC4, 0, 0, 0);
+      writeObject(&value, outStr, getXRef(), 0, nullptr, cryptRC4, 0, 0, 0);
     }
   }
   outStr->printf(" >>\nendobj\n");
@@ -1001,7 +1001,7 @@ void PDFDoc::saveIncrementalUpdate (OutStream* outStr)
 
   Goffset uxrefOffset = outStr->getPos();
   int numobjects = xref->getNumObjects();
-  const char *fileNameA = fileName ? fileName->getCString() : NULL;
+  const char *fileNameA = fileName ? fileName->getCString() : nullptr;
   Ref rootRef, uxrefStreamRef;
   rootRef.num = getXRef()->getRootNum();
   rootRef.gen = getXRef()->getRootGen();
@@ -1063,7 +1063,7 @@ void PDFDoc::saveCompleteRewrite (OutStream* outStr)
       Goffset offset = writeObjectHeader(&ref, outStr);
       // Write unencrypted objects in unencrypted form
       if (xref->getEntry(i)->getFlag(XRefEntry::Unencrypted)) {
-        writeObject(&obj1, outStr, NULL, cryptRC4, 0, 0, 0);
+        writeObject(&obj1, outStr, nullptr, cryptRC4, 0, 0, 0);
       } else {
         writeObject(&obj1, outStr, fileKey, encAlgorithm, keyLength, ref.num, ref.gen);
       }
@@ -1161,7 +1161,7 @@ void PDFDoc::writeString (GooString* s, OutStream* outStr, Guchar *fileKey,
                           CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen)
 {
   // Encrypt string if encryption is enabled
-  GooString *sEnc = NULL;
+  GooString *sEnc = nullptr;
   if (fileKey) {
     EncryptStream *enc = new EncryptStream(new MemStream(s->getCString(), 0, s->getLength(), Object(objNull)),
                                            fileKey, encAlgorithm, keyLength, objNum, objGen);
@@ -1276,7 +1276,7 @@ void PDFDoc::writeObject (Object* obj, OutStream* outStr, XRef *xRef, Guint numO
           //we write the stream unencoded => TODO: write stream encoder
 
           // Encrypt stream
-          EncryptStream *encStream = NULL;
+          EncryptStream *encStream = nullptr;
           GBool removeFilter = gTrue;
           if (stream->getKind() == strWeird && fileKey) {
             Object filter = stream->getDict()->lookup("Filter");
@@ -1302,7 +1302,7 @@ void PDFDoc::writeObject (Object* obj, OutStream* outStr, XRef *xRef, Guint numO
             } else {
               removeFilter = gFalse;
             }
-          } else if (fileKey != NULL) { // Encrypt stream
+          } else if (fileKey != nullptr) { // Encrypt stream
             encStream = new EncryptStream(stream, fileKey, encAlgorithm, keyLength, objNum, objGen);
             encStream->setAutoDelete(gFalse);
             stream = encStream;
@@ -1382,7 +1382,7 @@ Object PDFDoc::createTrailerDict(int uxrefSize, GBool incrUpdate, Goffset startx
   // - values of entry in information dictionnary
   GooString message;
   char buffer[256];
-  sprintf(buffer, "%i", (int)time(NULL));
+  sprintf(buffer, "%i", (int)time(nullptr));
   message.append(buffer);
 
   if (fileName)
@@ -1459,7 +1459,7 @@ void PDFDoc::writeXRefTableTrailer(Object &&trailerDict, XRef *uxref, GBool writ
 {
   uxref->writeTableToFile( outStr, writeAllEntries );
   outStr->printf( "trailer\r\n");
-  writeDictionnary(trailerDict.getDict(), outStr, xRef, 0, NULL, cryptRC4, 0, 0, 0, nullptr);
+  writeDictionnary(trailerDict.getDict(), outStr, xRef, 0, nullptr, cryptRC4, 0, 0, 0, nullptr);
   outStr->printf( "\r\nstartxref\r\n");
   outStr->printf( "%lli\r\n", uxrefOffset);
   outStr->printf( "%%%%EOF\r\n");
@@ -1476,7 +1476,7 @@ void PDFDoc::writeXRefStreamTrailer (Object &&trailerDict, XRef *uxref, Ref *uxr
   MemStream *mStream = new MemStream( stmData.getCString(), 0, stmData.getLength(), std::move(trailerDict) );
   writeObjectHeader(uxrefStreamRef, outStr);
   Object obj1(static_cast<Stream*>(mStream));
-  writeObject(&obj1, outStr, xRef, 0, NULL, cryptRC4, 0, 0, 0);
+  writeObject(&obj1, outStr, xRef, 0, nullptr, cryptRC4, 0, 0, 0);
   writeObjectFooter(outStr);
 
   outStr->printf( "startxref\r\n");
@@ -1487,7 +1487,7 @@ void PDFDoc::writeXRefStreamTrailer (Object &&trailerDict, XRef *uxref, Ref *uxr
 void PDFDoc::writeXRefTableTrailer(Goffset uxrefOffset, XRef *uxref, GBool writeAllEntries,
                                    int uxrefSize, OutStream* outStr, GBool incrUpdate)
 {
-  const char *fileNameA = fileName ? fileName->getCString() : NULL;
+  const char *fileNameA = fileName ? fileName->getCString() : nullptr;
   // file size (doesn't include the trailer)
   unsigned int fileSize = 0;
   int c;
@@ -1618,7 +1618,7 @@ void PDFDoc::replacePageDict(int pageNo, int rotate,
   Object mediaBoxObject(mediaBoxArray);
   Object trimBoxObject = mediaBoxObject.copy();
   pageDict->add(copyString("MediaBox"), std::move(mediaBoxObject));
-  if (cropBox != NULL) {
+  if (cropBox != nullptr) {
     Array *cropBoxArray = new Array(getXRef());
     cropBoxArray->add(Object(cropBox->x1));
     cropBoxArray->add(Object(cropBox->y1));
@@ -1793,9 +1793,9 @@ Guint PDFDoc::writePageObjects(OutStream *outStr, XRef *xRef, Guint numOffset, G
       Object obj = getXRef()->fetch(ref.num - numOffset, ref.gen);
       Goffset offset = writeObjectHeader(&ref, outStr);
       if (combine) {
-        writeObject(&obj, outStr, getXRef(), numOffset, NULL, cryptRC4, 0, 0, 0);
+        writeObject(&obj, outStr, getXRef(), numOffset, nullptr, cryptRC4, 0, 0, 0);
       } else if (xRef->getEntry(n)->getFlag(XRefEntry::Unencrypted)) {
-        writeObject(&obj, outStr, NULL, cryptRC4, 0, 0, 0);
+        writeObject(&obj, outStr, nullptr, cryptRC4, 0, 0, 0);
       } else {
         writeObject(&obj, outStr, fileKey, encAlgorithm, keyLength, ref.num, ref.gen);
       }
@@ -1942,37 +1942,37 @@ Page *PDFDoc::parsePage(int page)
   pageRef.num = getHints()->getPageObjectNum(page);
   if (!pageRef.num) {
     error(errSyntaxWarning, -1, "Failed to get object num from hint tables for page {0:d}", page);
-    return NULL;
+    return nullptr;
   }
 
   // check for bogus ref - this can happen in corrupted PDF files
   if (pageRef.num < 0 || pageRef.num >= xref->getNumObjects()) {
     error(errSyntaxWarning, -1, "Invalid object num ({0:d}) for page {1:d}", pageRef.num, page);
-    return NULL;
+    return nullptr;
   }
 
   pageRef.gen = xref->getEntry(pageRef.num)->gen;
   Object obj = xref->fetch(pageRef.num, pageRef.gen);
   if (!obj.isDict("Page")) {
     error(errSyntaxWarning, -1, "Object ({0:d} {1:d}) is not a pageDict", pageRef.num, pageRef.gen);
-    return NULL;
+    return nullptr;
   }
   Dict *pageDict = obj.getDict();
 
   return new Page(this, page, &obj, pageRef,
-               new PageAttrs(NULL, pageDict), catalog->getForm());
+               new PageAttrs(nullptr, pageDict), catalog->getForm());
 }
 
 Page *PDFDoc::getPage(int page)
 {
-  if ((page < 1) || page > getNumPages()) return NULL;
+  if ((page < 1) || page > getNumPages()) return nullptr;
 
   if (isLinearized() && checkLinearization()) {
     pdfdocLocker();
     if (!pageCache) {
       pageCache = (Page **) gmallocn(getNumPages(), sizeof(Page *));
       for (int i = 0; i < getNumPages(); i++) {
-        pageCache[i] = NULL;
+        pageCache[i] = nullptr;
       }
     }
     if (!pageCache[page-1]) {

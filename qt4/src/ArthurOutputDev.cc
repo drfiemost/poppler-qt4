@@ -23,7 +23,7 @@
 // Copyright (C) 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
 // Copyright (C) 2013 Dominik Haumann <dhaumann@kde.org>
 // Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
-//
+// //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
 //
@@ -95,8 +95,8 @@ ArthurOutputDev::ArthurOutputDev(QPainter *painter):
 {
   m_painter.push(painter);
   m_currentBrush = QBrush(Qt::SolidPattern);
-  m_fontEngine = 0;
-  m_font = 0;
+  m_fontEngine = nullptr;
+  m_font = nullptr;
 }
 
 ArthurOutputDev::~ArthurOutputDev()
@@ -324,7 +324,7 @@ void ArthurOutputDev::updateFont(GfxState *state)
   GfxFontType fontType;
   SplashOutFontFileID *id;
   SplashFontFile *fontFile;
-  SplashFontSrc *fontsrc = NULL;
+  SplashFontSrc *fontsrc = nullptr;
   FoFiTrueType *ff;
   Object refObj, strObj;
   GooString *fileName;
@@ -339,10 +339,10 @@ void ArthurOutputDev::updateFont(GfxState *state)
   SplashCoord matrix[6];
 
   m_needFontUpdate = false;
-  m_font = NULL;
-  fileName = NULL;
-  tmpBuf = NULL;
-  fontLoc = NULL;
+  m_font = nullptr;
+  fileName = nullptr;
+  tmpBuf = nullptr;
+  fontLoc = nullptr;
 
   if (!(gfxFont = state->getFont())) {
     goto err1;
@@ -359,7 +359,7 @@ void ArthurOutputDev::updateFont(GfxState *state)
 
   } else {
 
-    if (!(fontLoc = gfxFont->locateFont(xref, NULL))) {
+    if (!(fontLoc = gfxFont->locateFont(xref, nullptr))) {
       error(errSyntaxError, -1, "Couldn't find a font for '{0:s}'",
 	    gfxFont->getName() ? gfxFont->getName()->getCString()
 	                       : "(unnamed)");
@@ -431,7 +431,7 @@ void ArthurOutputDev::updateFont(GfxState *state)
 	n = 256;
 	delete ff;
       } else {
-	codeToGID = NULL;
+	codeToGID = nullptr;
 	n = 0;
       }
       if (!(fontFile = m_fontEngine->loadTrueTypeFont(
@@ -462,7 +462,7 @@ void ArthurOutputDev::updateFont(GfxState *state)
 	memcpy(codeToGID, ((GfxCIDFont *)gfxFont)->getCIDToGID(),
 	       n * sizeof(int));
       } else {
-	codeToGID = NULL;
+	codeToGID = nullptr;
 	n = 0;
       }      
       if (!(fontFile = m_fontEngine->loadOpenTypeCFFFont(
@@ -477,7 +477,7 @@ void ArthurOutputDev::updateFont(GfxState *state)
       break;
     case fontCIDType2:
     case fontCIDType2OT:
-      codeToGID = NULL;
+      codeToGID = nullptr;
       n = 0;
       if (((GfxCIDFont *)gfxFont)->getCIDToGID()) {
 	n = ((GfxCIDFont *)gfxFont)->getCIDToGIDLen();
@@ -752,7 +752,7 @@ void ArthurOutputDev::drawImageMask(GfxState *state, Object *ref, Stream *str,
 
   row_stride = (width + 3) & ~3;
   buffer = (unsigned char *) malloc (height * row_stride);
-  if (buffer == NULL) {
+  if (buffer == nullptr) {
     error(-1, "Unable to allocate memory for image.");
     return;
   }
@@ -777,10 +777,10 @@ void ArthurOutputDev::drawImageMask(GfxState *state, Object *ref, Stream *str,
 
   image = cairo_image_surface_create_for_data (buffer, CAIRO_FORMAT_A8,
 					  width, height, row_stride);
-  if (image == NULL)
+  if (image == nullptr)
     return;
   pattern = cairo_pattern_create_for_surface (image);
-  if (pattern == NULL)
+  if (pattern == nullptr)
     return;
 
   ctm = state->getCTM();

@@ -145,7 +145,7 @@ enum ObjType {
 class Object {
 public:
   // clear the anonymous union as best we can -- clear at least a pointer
-  void zeroUnion() { this->cString = NULL; }
+  void zeroUnion() { this->cString = nullptr; }
 
   // Default constructor.
   Object():

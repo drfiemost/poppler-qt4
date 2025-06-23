@@ -17,6 +17,7 @@
 // Copyright (C) 2008 Hugo Mercier <hmercier31@gmail.com>
 // Copyright (C) 2010, 2011 Carlos Garcia Campos <carlosgc@gnome.org>
 // Copyright (C) 2012 Tobias Koening <tobias.koenig@kdab.com>
+// Copyright (C) 2018 Albert Astals Cid <aacid@kde.org>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -62,6 +63,10 @@ enum LinkActionKind {
 class LinkAction {
 public:
 
+  LinkAction() = default;
+  LinkAction(const LinkAction &) = delete;
+  LinkAction& operator=(const LinkAction &other) = delete;
+
   // Destructor.
   virtual ~LinkAction() {}
 
@@ -75,7 +80,7 @@ public:
   static LinkAction *parseDest(Object *obj);
 
   // Parse an action dictionary.
-  static LinkAction *parseAction(Object *obj, GooString *baseURI = NULL);
+  static LinkAction *parseAction(Object *obj, GooString *baseURI = nullptr);
 };
 
 //------------------------------------------------------------------------
@@ -214,7 +219,7 @@ public:
   ~LinkLaunch();
 
   // Was the LinkLaunch created successfully?
-  GBool isOk() override { return fileName != NULL; }
+  GBool isOk() override { return fileName != nullptr; }
 
   // Accessors.
   LinkActionKind getKind() override { return actionLaunch; }
@@ -241,7 +246,7 @@ public:
   ~LinkURI();
 
   // Was the LinkURI created successfully?
-  GBool isOk() override { return uri != NULL; }
+  GBool isOk() override { return uri != nullptr; }
 
   // Accessors.
   LinkActionKind getKind() override { return actionURI; }
@@ -264,7 +269,7 @@ public:
 
   ~LinkNamed();
 
-  GBool isOk() override { return name != NULL; }
+  GBool isOk() override { return name != nullptr; }
 
   LinkActionKind getKind() override { return actionNamed; }
   GooString *getName() { return name; }
@@ -292,14 +297,14 @@ public:
   LinkMovie(Object *obj);
   ~LinkMovie();
 
-  GBool isOk() override { return annotRef.num >= 0 || annotTitle != NULL; }
+  GBool isOk() override { return annotRef.num >= 0 || annotTitle != nullptr; }
   LinkActionKind getKind() override { return actionMovie; }
 
   // a movie action stores either an indirect reference to a movie annotation
   // or the movie annotation title
 
   GBool hasAnnotRef() { return annotRef.num >= 0; }
-  GBool hasAnnotTitle() { return annotTitle != NULL; }
+  GBool hasAnnotTitle() { return annotTitle != nullptr; }
   Ref *getAnnotRef() { return &annotRef; }
   GooString *getAnnotTitle() { return annotTitle; }
 
@@ -373,7 +378,7 @@ public:
 
   ~LinkSound();
 
-  GBool isOk() override { return sound != NULL; }
+  GBool isOk() override { return sound != nullptr; }
 
   LinkActionKind getKind() override { return actionSound; }
 
@@ -404,7 +409,7 @@ public:
 
   ~LinkJavaScript();
 
-  GBool isOk() override { return js != NULL; }
+  GBool isOk() override { return js != nullptr; }
 
   LinkActionKind getKind() override { return actionJavaScript; }
   GooString *getScript() { return js; }
@@ -423,14 +428,16 @@ public:
 
   ~LinkOCGState();
 
-  GBool isOk() override { return stateList != NULL; }
+  GBool isOk() override { return stateList != nullptr; }
 
   LinkActionKind getKind() override { return actionOCGState; }
 
   enum State { On, Off, Toggle};
   struct StateList {
-    StateList() { list = NULL; }
+    StateList() { list = nullptr; }
     ~StateList();
+    StateList(const StateList &) = delete;
+    StateList& operator=(const StateList &) = delete;
     State st;
     GooList *list;
   };
@@ -457,7 +464,7 @@ public:
   ~LinkUnknown();
 
   // Was the LinkUnknown create successfully?
-  GBool isOk() override { return action != NULL; }
+  GBool isOk() override { return action != nullptr; }
 
   // Accessors.
   LinkActionKind getKind() override { return actionUnknown; }
@@ -480,6 +487,9 @@ public:
 
   // Destructor.
   ~Links();
+
+  Links(const Links &) = delete;
+  Links& operator=(const Links &) = delete;
 
   // Iterate through list of links.
   int getNumLinks() const { return numLinks; }

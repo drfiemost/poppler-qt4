@@ -114,7 +114,7 @@ SplashBitmap::SplashBitmap(int widthA, int heightA, int rowPadA,
     rowSize -= rowSize % rowPad;
   }
   data = (SplashColorPtr)gmallocn_checkoverflow(rowSize, height);
-  if (data != NULL) {
+  if (data != nullptr) {
     if (!topDown) {
       data += (height - 1) * rowSize;
       rowSize = -rowSize;
@@ -122,20 +122,20 @@ SplashBitmap::SplashBitmap(int widthA, int heightA, int rowPadA,
     if (alphaA) {
       alpha = (Guchar *)gmallocn(width, height);
     } else {
-      alpha = NULL;
+      alpha = nullptr;
     }
   } else {
-    alpha = NULL;
+    alpha = nullptr;
   }
   separationList = new GooList();
-  if (separationListA != NULL)
+  if (separationListA != nullptr)
     for (int i = 0; i < separationListA->getLength(); i++)
       separationList->append(((GfxSeparationColorSpace *) separationListA->get(i))->copy());
 }
 
 SplashBitmap *SplashBitmap::copy(SplashBitmap *src) {
   SplashBitmap *result = new SplashBitmap(src->getWidth(), src->getHeight(), src->getRowPad(), 
-    src->getMode(), src->getAlphaPtr() != NULL, src->getRowSize() >= 0, src->getSeparationList());
+    src->getMode(), src->getAlphaPtr() != nullptr, src->getRowSize() >= 0, src->getSeparationList());
   Guchar *dataSource = src->getDataPtr();
   Guchar *dataDest = result->getDataPtr();
   int amount = src->getRowSize();
@@ -147,7 +147,7 @@ SplashBitmap *SplashBitmap::copy(SplashBitmap *src) {
     amount *= src->getHeight();
   }
   memcpy(dataDest, dataSource, amount);
-  if (src->getAlphaPtr() != NULL) {
+  if (src->getAlphaPtr() != nullptr) {
     memcpy(result->getAlphaPtr(), src->getAlphaPtr(), src->getWidth() * src->getHeight());
   }
   return result;
@@ -335,7 +335,7 @@ SplashColorPtr SplashBitmap::takeData() {
   SplashColorPtr data2;
 
   data2 = data;
-  data = NULL;
+  data = nullptr;
   return data2;
 }
 
@@ -578,7 +578,7 @@ GBool SplashBitmap::convertToXBGR(ConversionMode conversionMode) {
   
   int newrowSize = width * 4;
   SplashColorPtr newdata = (SplashColorPtr)gmallocn_checkoverflow(newrowSize, height);
-  if (newdata != NULL) {
+  if (newdata != nullptr) {
     for (int y = 0; y < height; y++) {
       unsigned char *row = newdata + y * newrowSize;
       getXBGRLine(y, row, conversionMode);
@@ -592,7 +592,7 @@ GBool SplashBitmap::convertToXBGR(ConversionMode conversionMode) {
     rowSize = newrowSize;
     mode = splashModeXBGR8;
   }
-  return newdata != NULL;
+  return newdata != nullptr;
 }
 
 #ifdef SPLASH_CMYK

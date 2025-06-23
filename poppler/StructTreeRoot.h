@@ -5,6 +5,7 @@
 // This file is licensed under the GPLv2 or later
 //
 // Copyright 2013, 2014 Igalia S.L.
+// Copyright 2018 Albert Astals Cid <aacid@kde.org>
 //
 //========================================================================
 
@@ -30,6 +31,9 @@ class StructTreeRoot
 public:
   StructTreeRoot(PDFDoc *docA, Dict *rootDict);
   ~StructTreeRoot();
+
+  StructTreeRoot& operator=(const StructTreeRoot &) = delete;
+  StructTreeRoot(const StructTreeRoot &) = delete;
 
   PDFDoc *getDoc() { return doc; }
   Dict *getRoleMap() { return roleMap.isDict() ? roleMap.getDict() : NULL; }
@@ -63,7 +67,7 @@ private:
     Ref            ref;
     StructElement *element;
 
-    Parent(): element(NULL) { ref.num = ref.gen = -1; }
+    Parent(): element(nullptr) { ref.num = ref.gen = -1; }
     Parent(const Parent &p): element(p.element) {
       ref.num = p.ref.num;
       ref.gen = p.ref.gen;

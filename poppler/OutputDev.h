@@ -79,7 +79,7 @@ public:
  : iccColorSpaceCache(5)
 #endif
   {
-      profileHash = NULL;
+      profileHash = nullptr;
   }
 
   // Destructor.
@@ -138,10 +138,10 @@ public:
 			       int rotate, GBool useMediaBox, GBool crop,
 			       int sliceX, int sliceY, int sliceW, int sliceH,
 			       GBool printing,
-			       GBool (* abortCheckCbk)(void *data) = NULL,
-			       void * abortCheckCbkData = NULL,
-			       GBool (*annotDisplayDecideCbk)(Annot *annot, void *user_data) = NULL,
-			       void *annotDisplayDecideCbkData = NULL)
+			       GBool (* abortCheckCbk)(void *data) = nullptr,
+			       void * abortCheckCbkData = nullptr,
+			       GBool (*annotDisplayDecideCbk)(Annot *annot, void *user_data) = nullptr,
+			       void *annotDisplayDecideCbkData = nullptr)
     { return gTrue; }
 
   // Start a page.
