@@ -13,7 +13,7 @@
 // All changes made under the Poppler project to this file are licensed
 // under GPL version 2 or later
 //
-// Copyright (C) 2006-2010, 2012-2014, 2017 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2006-2010, 2012-2014, 2017, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2006 Krzysztof Kowalczyk <kkowalczyk@gmail.com>
 // Copyright (C) 2010 Carlos Garcia Campos <carlosgc@gnome.org>
 // Copyright (C) 2012, 2013 Adrian Johnson <ajohnson@redneon.com>
@@ -97,12 +97,14 @@ Lexer::Lexer(XRef *xrefA, Object *obj) {
   strPtr = 0;
   if (streams->getLength() > 0) {
     curStr = streams->get(strPtr);
-    curStr.streamReset();
+    if (curStr.isStream()) {
+      curStr.streamReset();
+    }
   }
 }
 
 Lexer::~Lexer() {
-  if (!curStr.isNone()) {
+  if (curStr.isStream()) {
     curStr.streamClose();
   }
   if (freeArray) {
@@ -120,7 +122,7 @@ int Lexer::getChar(GBool comesFromLook) {
   }
 
   c = EOF;
-  while (!curStr.isNone() && (c = curStr.streamGetChar()) == EOF) {
+  while (curStr.isStream() && (c = curStr.streamGetChar()) == EOF) {
     if (comesFromLook == gTrue) {
       return EOF;
     } else {
@@ -129,7 +131,9 @@ int Lexer::getChar(GBool comesFromLook) {
       ++strPtr;
       if (strPtr < streams->getLength()) {
         curStr = streams->get(strPtr);
-        curStr.streamReset();
+        if (curStr.isStream()) {
+            curStr.streamReset();
+        }
       }
     }
   }
