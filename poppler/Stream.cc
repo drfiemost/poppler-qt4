@@ -215,7 +215,7 @@ Stream *Stream::makeFilter(char *name, Stream *str, Object *params, int recursio
   int early;
   int encoding;
   GBool endOfLine, byteAlign, endOfBlock, black;
-  int columns, rows;
+  int columns, rows, damagedRowsBeforeError;
   Object globals, obj;
 
   if (!strcmp(name, "ASCIIHexDecode") || !strcmp(name, "AHx")) {
@@ -256,38 +256,43 @@ Stream *Stream::makeFilter(char *name, Stream *str, Object *params, int recursio
     rows = 0;
     endOfBlock = gTrue;
     black = gFalse;
+    damagedRowsBeforeError = 0;
     if (params->isDict()) {
       obj = params->dictLookup("K", recursion);
       if (obj.isInt()) {
-	encoding = obj.getInt();
+        encoding = obj.getInt();
       }
       obj = params->dictLookup("EndOfLine", recursion);
       if (obj.isBool()) {
-	endOfLine = obj.getBool();
+        endOfLine = obj.getBool();
       }
       obj = params->dictLookup("EncodedByteAlign", recursion);
       if (obj.isBool()) {
-	byteAlign = obj.getBool();
+        byteAlign = obj.getBool();
       }
       obj = params->dictLookup("Columns", recursion);
       if (obj.isInt()) {
-	columns = obj.getInt();
+        columns = obj.getInt();
       }
       obj = params->dictLookup("Rows", recursion);
       if (obj.isInt()) {
-	rows = obj.getInt();
+        rows = obj.getInt();
       }
       obj = params->dictLookup("EndOfBlock", recursion);
       if (obj.isBool()) {
-	endOfBlock = obj.getBool();
+        endOfBlock = obj.getBool();
       }
       obj = params->dictLookup("BlackIs1", recursion);
       if (obj.isBool()) {
-	black = obj.getBool();
+        black = obj.getBool();
+      }
+      obj = params->dictLookup("DamagedRowsBeforeError", recursion);
+      if (obj.isInt()) {
+        damagedRowsBeforeError = obj.getInt();
       }
     }
     str = new CCITTFaxStream(str, encoding, endOfLine, byteAlign,
-			     columns, rows, endOfBlock, black);
+			     columns, rows, endOfBlock, black, damagedRowsBeforeError);
   } else if (!strcmp(name, "DCTDecode") || !strcmp(name, "DCT")) {
 #ifdef HAVE_DCT_DECODER
     int colorXform = -1;
@@ -1641,12 +1646,13 @@ GBool RunLengthStream::fillBuf() {
 
 CCITTFaxStream::CCITTFaxStream(Stream *strA, int encodingA, GBool endOfLineA,
 			       GBool byteAlignA, int columnsA, int rowsA,
-			       GBool endOfBlockA, GBool blackA):
+			       GBool endOfBlockA, GBool blackA, int damagedRowsBeforeErrorA):
     FilterStream(strA) {
   encoding = encodingA;
   endOfLine = endOfLineA;
   byteAlign = byteAlignA;
   columns = columnsA;
+  damagedRowsBeforeError = damagedRowsBeforeErrorA;
   if (columns < 1) {
     columns = 1;
   } else if (columns > INT_MAX - 2) {
