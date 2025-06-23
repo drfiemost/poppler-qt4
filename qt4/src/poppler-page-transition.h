@@ -101,7 +101,10 @@ class POPPLER_QT4_EXPORT PageTransition {
 
   /** \brief copy constructor */
   PageTransition(const PageTransition &pt);
-  
+
+  /** \brief assignment operator \since 0.63 */
+  PageTransition& operator=(const PageTransition &other);
+
   /**
      Destructor
   */

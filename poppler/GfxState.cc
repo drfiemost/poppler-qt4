@@ -2010,7 +2010,7 @@ GfxColorSpace *GfxICCBasedColorSpace::parse(Array *arr, OutputDev *out, GfxState
 
 void GfxICCBasedColorSpace::getGray(GfxColor *color, GfxGray *gray) {
 #ifdef ENABLE_LCMS2
-  if (transform != 0 && transform->getTransformPixelType() == PT_GRAY) {
+  if (transform != nullptr && transform->getTransformPixelType() == PT_GRAY) {
     Guchar in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
     
@@ -2059,7 +2059,7 @@ void GfxICCBasedColorSpace::getGray(GfxColor *color, GfxGray *gray) {
 
 void GfxICCBasedColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
 #ifdef ENABLE_LCMS2
-  if (transform != 0 && transform->getTransformPixelType() == PT_RGB) {
+  if (transform != nullptr && transform->getTransformPixelType() == PT_RGB) {
     Guchar in[gfxColorMaxComps];
     Guchar out[gfxColorMaxComps];
     
@@ -2158,7 +2158,7 @@ void GfxICCBasedColorSpace::getRGB(GfxColor *color, GfxRGB *rgb) {
 void GfxICCBasedColorSpace::getRGBLine(Guchar *in, unsigned int *out,
 				       int length) {
 #ifdef ENABLE_LCMS2
-  if (lineTransform != 0 && lineTransform->getTransformPixelType() == PT_RGB) {
+  if (lineTransform != nullptr && lineTransform->getTransformPixelType() == PT_RGB) {
     Guchar* tmp = (Guchar *)gmallocn(3 * length, sizeof(Guchar));
     lineTransform->doTransform(in, tmp, length);
     for (int i = 0; i < length; ++i) {
@@ -2176,7 +2176,7 @@ void GfxICCBasedColorSpace::getRGBLine(Guchar *in, unsigned int *out,
 
 void GfxICCBasedColorSpace::getRGBLine(Guchar *in, Guchar *out, int length) {
 #ifdef ENABLE_LCMS2
-  if (lineTransform != 0 && lineTransform->getTransformPixelType() == PT_RGB) {
+  if (lineTransform != nullptr && lineTransform->getTransformPixelType() == PT_RGB) {
     Guchar* tmp = (Guchar *)gmallocn(3 * length, sizeof(Guchar));
     lineTransform->doTransform(in, tmp, length);
     Guchar *current = tmp;
@@ -2216,7 +2216,7 @@ void GfxICCBasedColorSpace::getRGBLine(Guchar *in, Guchar *out, int length) {
 
 void GfxICCBasedColorSpace::getRGBXLine(Guchar *in, Guchar *out, int length) {
 #ifdef ENABLE_LCMS2
-  if (lineTransform != 0 && lineTransform->getTransformPixelType() == PT_RGB) {
+  if (lineTransform != nullptr && lineTransform->getTransformPixelType() == PT_RGB) {
     Guchar* tmp = (Guchar *)gmallocn(3 * length, sizeof(Guchar));
     lineTransform->doTransform(in, tmp, length);
     Guchar *current = tmp;
@@ -3742,11 +3742,17 @@ GfxFunctionShading *GfxFunctionShading::parse(GfxResources *res, Dict *dict, Out
   x1A = y1A = 1;
   obj1 = dict->lookup("Domain");
   if (obj1.isArray() && obj1.arrayGetLength() == 4) {
+    bool decodeOk = true;
     Object obj2;
-    x0A = (obj2 = obj1.arrayGet(0), obj2.getNum());
-    x1A = (obj2 = obj1.arrayGet(1), obj2.getNum());
-    y0A = (obj2 = obj1.arrayGet(2), obj2.getNum());
-    y1A = (obj2 = obj1.arrayGet(3), obj2.getNum());
+    x0A = (obj2 = obj1.arrayGet(0), obj2.getNum(&decodeOk));
+    x1A = (obj2 = obj1.arrayGet(1), obj2.getNum(&decodeOk));
+    y0A = (obj2 = obj1.arrayGet(2), obj2.getNum(&decodeOk));
+    y1A = (obj2 = obj1.arrayGet(3), obj2.getNum(&decodeOk));
+
+    if (!decodeOk) {
+      error(errSyntaxWarning, -1, "Invalid Domain array in function shading dictionary");
+      return nullptr;
+    }
   }
 
   matrixA[0] = 1; matrixA[1] = 0;
@@ -3754,13 +3760,19 @@ GfxFunctionShading *GfxFunctionShading::parse(GfxResources *res, Dict *dict, Out
   matrixA[4] = 0; matrixA[5] = 0;
   obj1 = dict->lookup("Matrix");
   if (obj1.isArray() && obj1.arrayGetLength() == 6) {
+    bool decodeOk = true;
     Object obj2;
-    matrixA[0] = (obj2 = obj1.arrayGet(0), obj2.getNum());
-    matrixA[1] = (obj2 = obj1.arrayGet(1), obj2.getNum());
-    matrixA[2] = (obj2 = obj1.arrayGet(2), obj2.getNum());
-    matrixA[3] = (obj2 = obj1.arrayGet(3), obj2.getNum());
-    matrixA[4] = (obj2 = obj1.arrayGet(4), obj2.getNum());
-    matrixA[5] = (obj2 = obj1.arrayGet(5), obj2.getNum());
+    matrixA[0] = (obj2 = obj1.arrayGet(0), obj2.getNum(&decodeOk));
+    matrixA[1] = (obj2 = obj1.arrayGet(1), obj2.getNum(&decodeOk));
+    matrixA[2] = (obj2 = obj1.arrayGet(2), obj2.getNum(&decodeOk));
+    matrixA[3] = (obj2 = obj1.arrayGet(3), obj2.getNum(&decodeOk));
+    matrixA[4] = (obj2 = obj1.arrayGet(4), obj2.getNum(&decodeOk));
+    matrixA[5] = (obj2 = obj1.arrayGet(5), obj2.getNum(&decodeOk));
+
+    if (!decodeOk) {
+      error(errSyntaxWarning, -1, "Invalid Matrix array in function shading dictionary");
+      return nullptr;
+    }
   }
 
   obj1 = dict->lookup("Function");
@@ -4787,18 +4799,24 @@ GfxGouraudTriangleShading *GfxGouraudTriangleShading::parse(GfxResources *res, i
   obj1 = dict->lookup("Decode");
   if (obj1.isArray() && obj1.arrayGetLength() >= 6) {
     Object obj2;
-    xMin = (obj2 = obj1.arrayGet(0), obj2.getNum());
-    xMax = (obj2 = obj1.arrayGet(1), obj2.getNum());
+    bool decodeOk = true;
+    xMin = (obj2 = obj1.arrayGet(0), obj2.getNum(&decodeOk));
+    xMax = (obj2 = obj1.arrayGet(1), obj2.getNum(&decodeOk));
     xMul = (xMax - xMin) / (pow(2.0, coordBits) - 1);
-    yMin = (obj2 = obj1.arrayGet(2), obj2.getNum());
-    yMax = (obj2 = obj1.arrayGet(3), obj2.getNum());
+    yMin = (obj2 = obj1.arrayGet(2), obj2.getNum(&decodeOk));
+    yMax = (obj2 = obj1.arrayGet(3), obj2.getNum(&decodeOk));
     yMul = (yMax - yMin) / (pow(2.0, coordBits) - 1);
     for (i = 0; 5 + 2*i < obj1.arrayGetLength() && i < gfxColorMaxComps; ++i) {
-      cMin[i] = (obj2 = obj1.arrayGet(4 + 2*i), obj2.getNum());
-      cMax[i] = (obj2 = obj1.arrayGet(5 + 2*i), obj2.getNum());
+      cMin[i] = (obj2 = obj1.arrayGet(4 + 2*i), obj2.getNum(&decodeOk));
+      cMax[i] = (obj2 = obj1.arrayGet(5 + 2*i), obj2.getNum(&decodeOk));
       cMul[i] = (cMax[i] - cMin[i]) / (double)((1 << compBits) - 1);
     }
     nComps = i;
+
+    if (!decodeOk) {
+      error(errSyntaxWarning, -1, "Missing or invalid Decode array in shading dictionary");
+      return nullptr;
+    }
   } else {
     error(errSyntaxWarning, -1, "Missing or invalid Decode array in shading dictionary");
     return nullptr;
