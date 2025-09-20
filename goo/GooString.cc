@@ -789,7 +789,7 @@ GooString *GooString::lowerCase() {
   return this;
 }
 
-int GooString::cmp(GooString *str) const {
+int GooString::cmp(const GooString *str) const {
   int n1, n2, i, x;
   char *p1, *p2;
 
@@ -804,7 +804,7 @@ int GooString::cmp(GooString *str) const {
   return n1 - n2;
 }
 
-int GooString::cmpN(GooString *str, int n) const {
+int GooString::cmpN(const GooString *str, int n) const {
   int n1, n2, i, x;
   char *p1, *p2;
 

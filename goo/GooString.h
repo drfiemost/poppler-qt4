@@ -152,8 +152,8 @@ public:
   GooString *lowerCase();
 
   // Compare two strings:  -1:<  0:=  +1:>
-  int cmp(GooString *str) const;
-  int cmpN(GooString *str, int n) const;
+  int cmp(const GooString *str) const;
+  int cmpN(const GooString *str, int n) const;
   int cmp(const char *sA) const;
   int cmpN(const char *sA, int n) const;
 
