@@ -288,7 +288,7 @@ FormFieldText::TextType FormFieldText::textType() const
 
 QString FormFieldText::text() const
 {
-  GooString *goo = static_cast<FormWidgetText*>(m_formData->fm)->getContent();
+  const GooString *goo = static_cast<FormWidgetText*>(m_formData->fm)->getContent();
   return UnicodeParsedString(goo);
 }
 

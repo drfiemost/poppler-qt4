@@ -11,6 +11,7 @@
  * Inspired on code by
  * Copyright (C) 2004 by Albert Astals Cid <tsdgeos@terra.es>
  * Copyright (C) 2004 by Enrico Ros <eros.kde@email.it>
+ * Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +57,7 @@ namespace Poppler {
     /* borrowed from kpdf */
     QString unicodeToQString(Unicode* u, int len);
 
-    QString UnicodeParsedString(GooString *s1);
+    QString UnicodeParsedString(const GooString *s1);
 
     GooString *QStringToUnicodeGooString(const QString &s);
 

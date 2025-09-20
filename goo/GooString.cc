@@ -268,7 +268,7 @@ GooString *GooString::append(char c) {
   return append((const char*)&c, 1);
 }
 
-GooString *GooString::append(GooString *str) {
+GooString *GooString::append(const GooString *str) {
   return append(str->getCString(), str->getLength());
 }
 

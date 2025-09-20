@@ -132,7 +132,7 @@ public:
 
   // Append a character or string.
   GooString *append(char c);
-  GooString *append(GooString *str);
+  GooString *append(const GooString *str);
   GooString *append(const char *str, int lengthA=CALC_STRING_LEN);
 
   // Append a formatted string.
