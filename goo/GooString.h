@@ -64,7 +64,7 @@ public:
   GooString(const char *sA, int lengthA);
 
   // Create a string from <lengthA> chars at <idx> in <str>.
-  GooString(GooString *str, int idx, int lengthA);
+  GooString(const GooString *str, int idx, int lengthA);
 
   // Set content of a string to <newStr>. If <newLen> is CALC_STRING_LEN, then
   // length of the string will be calculated with strlen(). Otherwise we assume
@@ -76,7 +76,7 @@ public:
   GooString *copy() const { return new GooString(this); }
 
   // Concatenate two strings.
-  GooString(GooString *str1, GooString *str2);
+  GooString(const GooString *str1, const GooString *str2);
 
   // Convert an integer to a string.
   static GooString *fromInt(int x);
@@ -141,7 +141,7 @@ public:
 
   // Insert a character or string.
   GooString *insert(int i, char c);
-  GooString *insert(int i, GooString *str);
+  GooString *insert(int i, const GooString *str);
   GooString *insert(int i, const char *str, int lengthA=CALC_STRING_LEN);
 
   // Delete a character or range of characters.

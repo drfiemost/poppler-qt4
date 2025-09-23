@@ -206,7 +206,7 @@ GooString::GooString(const char *sA, int lengthA) {
   Set(sA, lengthA);
 }
 
-GooString::GooString(GooString *str, int idx, int lengthA) {
+GooString::GooString(const GooString *str, int idx, int lengthA) {
   s = nullptr;
   length = 0;
   assert(idx + lengthA <= str->length);
@@ -219,7 +219,7 @@ GooString::GooString(const GooString *str) {
   Set(str->getCString(), str->length);
 }
 
-GooString::GooString(GooString *str1, GooString *str2) {
+GooString::GooString(const GooString *str1, const GooString *str2) {
   s = nullptr;
   length = 0;
   resize(str1->length + str2->length);
@@ -739,7 +739,7 @@ GooString *GooString::insert(int i, char c) {
   return insert(i, (const char*)&c, 1);
 }
 
-GooString *GooString::insert(int i, GooString *str) {
+GooString *GooString::insert(int i, const GooString *str) {
   return insert(i, str->getCString(), str->getLength());
 }
 
