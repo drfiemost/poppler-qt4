@@ -653,7 +653,7 @@ LinkMovie::LinkMovie(const Object *obj) {
 
   tmp = obj->dictLookup("Operation");
   if (tmp.isName()) {
-    char *name = tmp.getName();
+    const char *name = tmp.getName();
     
     if (!strcmp(name, "Play")) {
       operation = operationTypePlay;
@@ -833,7 +833,7 @@ LinkOCGState::LinkOCGState(const Object *obj) {
         if (stList)
 	  stateList->append(stList);
 
-	char *name = obj2.getName();
+	const char *name = obj2.getName();
 	stList = new StateList();
 	stList->list = new GooList();
 	if (!strcmp (name, "ON")) {
@@ -914,7 +914,7 @@ LinkHide::~LinkHide() {
 // LinkUnknown
 //------------------------------------------------------------------------
 
-LinkUnknown::LinkUnknown(char *actionA) {
+LinkUnknown::LinkUnknown(const char *actionA) {
   action = new GooString(actionA);
 }
 

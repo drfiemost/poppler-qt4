@@ -175,7 +175,6 @@ class POPPLER_QT4_EXPORT LinkDestination
 class POPPLER_QT4_EXPORT Link
 {
 	friend class OptContentModel;
-    friend class LinkPrivate;
 
 	public:
 		/// \cond PRIVATE
