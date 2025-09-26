@@ -19,7 +19,8 @@
 // Copyright (C) 2010 Pino Toscano <pino@kde.org>
 // Copyright (C) 2011 Andreas Hartmetz <ahartmetz@gmail.com>
 // Copyright (C) 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
-// Copyright (C) 2018 Oliver Sander <oliver.sander@tu-dresden.de>
+// Copyright (C) 2013 Mihai Niculescu <q.quark@gmail.com>
+// Copyright (C) 2017, 2018 Oliver Sander <oliver.sander@tu-dresden.de>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -33,22 +34,24 @@
 #pragma interface
 #endif
 
+#include <memory>
+#include <map>
+#include <stack>
+
 #include "goo/gtypes.h"
 #include "OutputDev.h"
 #include "GfxState.h"
 
 #include <QtGui/QPainter>
 
-#include <stack>
-
 class GfxState;
-class GfxPath;
-class Gfx8BitFont;
-struct GfxRGB;
+class PDFDoc;
 
-class SplashFont;
 class SplashFontEngine;
-struct SplashGlyphBitmap;
+
+class QRawFont;
+
+class ArthurType3Font;
 
 //------------------------------------------------------------------------
 // ArthurOutputDev - Qt 4 QPainter renderer
@@ -70,7 +73,7 @@ public:
   ArthurOutputDev(QPainter *painter );
 
   // Destructor.
-  virtual ~ArthurOutputDev();
+  ~ArthurOutputDev();
 
   void setFontHinting(FontHinting hinting) { m_fontHinting = hinting; }
 
@@ -91,9 +94,12 @@ public:
 
   // Does this device use beginType3Char/endType3Char?  Otherwise,
   // text in Type 3 fonts will be drawn with drawChar/drawString.
-  GBool interpretType3Chars() override { return gTrue; }
+  GBool interpretType3Chars() override { return gFalse; }
 
   //----- initialization and control
+
+  // Set Current Transformation Matrix to a fixed matrix given in ctm[0],...,ctm[5]
+  void setDefaultCTM(double *ctm) override;
 
   // Start a page.
   void startPage(int pageNum, GfxState *state, XRef *xref) override;
@@ -108,7 +114,7 @@ public:
   //----- update graphics state
   void updateAll(GfxState *state) override;
   void updateCTM(GfxState *state, double m11, double m12,
-			 double m21, double m22, double m31, double m32) override;
+         double m21, double m22, double m31, double m32) override;
   void updateLineDash(GfxState *state) override;
   void updateFlatness(GfxState *state) override;
   void updateLineJoin(GfxState *state) override;
@@ -137,44 +143,50 @@ public:
   //----- text drawing
   //   virtual void drawString(GfxState *state, GooString *s);
   void drawChar(GfxState *state, double x, double y,
-			double dx, double dy,
-			double originX, double originY,
-			CharCode code, int nBytes, Unicode *u, int uLen) override;
-  GBool beginType3Char(GfxState *state, double x, double y,
-			       double dx, double dy,
-			       CharCode code, Unicode *u, int uLen) override;
-  void endType3Char(GfxState *state) override;
+        double dx, double dy,
+        double originX, double originY,
+        CharCode code, int nBytes, Unicode *u, int uLen) override;
   void endTextObject(GfxState *state) override;
 
   //----- image drawing
   void drawImageMask(GfxState *state, Object *ref, Stream *str,
-			     int width, int height, GBool invert,
-			     GBool interpolate, GBool inlineImg) override;
+             int width, int height, GBool invert,
+             GBool interpolate, GBool inlineImg) override;
   void drawImage(GfxState *state, Object *ref, Stream *str,
-			 int width, int height, GfxImageColorMap *colorMap,
-			 GBool interpolate, int *maskColors, GBool inlineImg) override;
+         int width, int height, GfxImageColorMap *colorMap,
+         GBool interpolate, int *maskColors, GBool inlineImg) override;
+
+  void drawSoftMaskedImage(GfxState *state, Object *ref, Stream *str,
+                           int width, int height,
+                           GfxImageColorMap *colorMap,
+                           GBool interpolate,
+                           Stream *maskStr,
+                           int maskWidth, int maskHeight,
+                           GfxImageColorMap *maskColorMap,
+                           GBool maskInterpolate) override;
 
   //----- Type 3 font operators
   void type3D0(GfxState *state, double wx, double wy) override;
   void type3D1(GfxState *state, double wx, double wy,
-		       double llx, double lly, double urx, double ury) override;
+           double llx, double lly, double urx, double ury) override;
 
   //----- transparency groups and soft masks
-  void beginTransparencyGroup(GfxState *state, double *bbox,
+  virtual void beginTransparencyGroup(GfxState *state, double *bbox,
                                       GfxColorSpace *blendingColorSpace,
                                       GBool isolated, GBool knockout,
                                       GBool forSoftMask) override;
-  void endTransparencyGroup(GfxState *state) override;
-  void paintTransparencyGroup(GfxState *state, double *bbox) override;
+  virtual void endTransparencyGroup(GfxState *state) override;
+  virtual void paintTransparencyGroup(GfxState *state, double *bbox) override;
 
   //----- special access
 
   // Called to indicate that a new PDF document has been loaded.
-  void startDoc(XRef *xrefA);
- 
+  void startDoc(PDFDoc* doc);
+
   GBool isReverseVideo() { return gFalse; }
   
 private:
+
   // The stack of QPainters is used to implement transparency groups.  When such a group
   // is opened, annew Painter that paints onto a QPicture is pushed onto the stack.
   // It is popped again when the transparency group ends.
@@ -188,13 +200,46 @@ private:
   QPicture* m_lastTransparencyGroupPicture;
 
   FontHinting m_fontHinting;
-  QFont m_currentFont;
+
   QPen m_currentPen;
+  // The various stacks are used to implement the 'saveState' and 'restoreState' methods
+  std::stack<QPen> m_currentPenStack;
+
   QBrush m_currentBrush;
-  GBool m_needFontUpdate;		// set when the font needs to be updated
+  std::stack<QBrush> m_currentBrushStack;
+
+  GBool m_needFontUpdate;       // set when the font needs to be updated
   SplashFontEngine *m_fontEngine;
-  SplashFont *m_font;		// current font
-  XRef *xref;			// xref table for current document
+  PDFDoc* m_doc;
+  XRef *xref;           // xref table for current document
+
+  // The current font in use
+  QRawFont* m_rawFont;
+  std::stack<QRawFont*> m_rawFontStack;
+
+  ArthurType3Font* m_currentType3Font;
+  std::stack<ArthurType3Font*> m_type3FontStack;
+
+  // Identify a font by its 'Ref' and its font size
+  struct ArthurFontID
+  {
+    Ref ref;
+    double fontSize;
+
+    bool operator<(const ArthurFontID& other) const
+    {
+      return (ref.num < other.ref.num)
+             ||  ((ref.num == other.ref.num) && (fontSize < other.fontSize));
+    }
+  };
+
+  // Cache all fonts
+  std::map<ArthurFontID,std::unique_ptr<QRawFont> > m_rawFontCache;
+  std::map<ArthurFontID,std::unique_ptr<ArthurType3Font> > m_type3FontCache;
+
+  // The table that maps character codes to glyph indexes
+  int* m_codeToGID;
+  std::stack<int*> m_codeToGIDStack;
 };
 
 #endif

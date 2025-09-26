@@ -22,10 +22,11 @@
 // Copyright (C) 2011 Andreas Hartmetz <ahartmetz@gmail.com>
 // Copyright (C) 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
 // Copyright (C) 2013 Dominik Haumann <dhaumann@kde.org>
+// Copyright (C) 2013 Mihai Niculescu <q.quark@gmail.com>
+// Copyright (C) 2017, 2018 Oliver Sander <oliver.sander@tu-dresden.de>
 // Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
-// Copyright (C) 2018 Oliver Sander <oliver.sander@tu-dresden.de>
 // Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
-// //
+//
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
 //
@@ -50,20 +51,22 @@
 #include "FontEncodingTables.h"
 #include <fofi/FoFiTrueType.h>
 #include "ArthurOutputDev.h"
+#include "Page.h"
+#include "Gfx.h"
+#include "PDFDoc.h"
 
 #include <QtCore/QtDebug>
+#include <QRawFont>
+#include <QGlyphRun>
 #include <QtGui/QPainterPath>
 #include <QPicture>
+
 //------------------------------------------------------------------------
 
 #ifdef HAVE_SPLASH
 #include "splash/SplashFontFileID.h"
-#include "splash/SplashFontFile.h"
+#include "splash/SplashFTFontFile.h"
 #include "splash/SplashFontEngine.h"
-#include "splash/SplashFont.h"
-#include "splash/SplashMath.h"
-#include "splash/SplashPath.h"
-#include "splash/SplashGlyphBitmap.h"
 //------------------------------------------------------------------------
 // SplashOutFontFileID
 //------------------------------------------------------------------------
@@ -75,7 +78,7 @@ public:
 
   ~SplashOutFontFileID() {}
 
-  GBool matches(SplashFontFileID *id) {
+  GBool matches(SplashFontFileID *id) override {
     return ((SplashOutFontFileID *)id)->r.num == r.num &&
            ((SplashOutFontFileID *)id)->r.gen == r.gen;
   }
@@ -86,6 +89,86 @@ private:
 };
 
 #endif
+
+class ArthurType3Font
+{
+public:
+
+  ArthurType3Font(PDFDoc* doc, Gfx8BitFont* font);
+
+  const QPicture& getGlyph(int gid) const;
+
+private:
+  PDFDoc* m_doc;
+  Gfx8BitFont* m_font;
+
+  mutable std::vector<std::unique_ptr<QPicture> > glyphs;
+
+public:
+  std::vector<int> codeToGID;
+};
+
+ArthurType3Font::ArthurType3Font(PDFDoc* doc, Gfx8BitFont* font)
+: m_doc(doc), m_font(font)
+{
+  char *name;
+  const Dict* charProcs = font->getCharProcs();
+
+  // Storage for the rendered glyphs
+  glyphs.resize(charProcs->getLength());
+
+  // Compute the code-to-GID map
+  char **enc = font->getEncoding();
+
+  codeToGID.resize(256);
+
+  for (int i = 0; i < 256; ++i) {
+    codeToGID[i] = 0;
+    if (charProcs && (name = enc[i])) {
+      for (int j = 0; j < charProcs->getLength(); j++) {
+        if (strcmp(name, charProcs->getKey(j)) == 0) {
+          codeToGID[i] = j;
+        }
+      }
+    }
+  }
+}
+
+const QPicture& ArthurType3Font::getGlyph(int gid) const
+{
+  if (!glyphs[gid]) {
+
+    // Glyph has not been rendered before: render it now
+
+    // Smallest box that contains all the glyphs from this font
+    const double* fontBBox = m_font->getFontBBox();
+    PDFRectangle box(fontBBox[0], fontBBox[1], fontBBox[2], fontBBox[3]);
+
+    Dict* resDict = m_font->getResources();
+
+    QPainter glyphPainter;
+    glyphs[gid] = std::unique_ptr<QPicture>(new QPicture);
+    glyphPainter.begin(glyphs[gid].get());
+    std::unique_ptr<ArthurOutputDev> output_dev(new ArthurOutputDev(&glyphPainter));
+
+    std::unique_ptr<Gfx> gfx(new Gfx(m_doc, output_dev.get(), resDict,
+                                     &box,  // pagebox
+                                     nullptr));  // cropBox
+
+    output_dev->startDoc(m_doc);
+
+    output_dev->startPage (1, gfx->getState(), gfx->getXRef());
+
+    const Dict* charProcs = m_font->getCharProcs();
+    Object charProc = charProcs->getVal(gid);
+    gfx->display(&charProc);
+
+    glyphPainter.end();
+  }
+
+  return *glyphs[gid];
+}
+
 
 //------------------------------------------------------------------------
 // ArthurOutputDev
@@ -98,7 +181,6 @@ ArthurOutputDev::ArthurOutputDev(QPainter *painter):
   m_painter.push(painter);
   m_currentBrush = QBrush(Qt::SolidPattern);
   m_fontEngine = nullptr;
-  m_font = nullptr;
 }
 
 ArthurOutputDev::~ArthurOutputDev()
@@ -108,8 +190,9 @@ ArthurOutputDev::~ArthurOutputDev()
 #endif
 }
 
-void ArthurOutputDev::startDoc(XRef *xrefA) {
-  xref = xrefA;
+void ArthurOutputDev::startDoc(PDFDoc* doc) {
+  xref = doc->getXRef();
+  m_doc = doc;
 #ifdef HAVE_SPLASH
   delete m_fontEngine;
 
@@ -125,30 +208,36 @@ void ArthurOutputDev::startDoc(XRef *xrefA) {
 }
 
 void ArthurOutputDev::startPage(int pageNum, GfxState *state, XRef *)
-{
-  // fill page with white background.
-  int w = static_cast<int>(state->getPageWidth());
-  int h = static_cast<int>(state->getPageHeight());
-  QColor fillColour(Qt::white);
-  QBrush fill(fillColour);
-  m_painter.top()->save();
-  m_painter.top()->setPen(fillColour);
-  m_painter.top()->setBrush(fill);
-  m_painter.top()->drawRect(0, 0, w, h);
-  m_painter.top()->restore();
-}
+{}
 
 void ArthurOutputDev::endPage() {
 }
 
 void ArthurOutputDev::saveState(GfxState *state)
 {
+  m_currentPenStack.push(m_currentPen);
+  m_currentBrushStack.push(m_currentBrush);
+  m_rawFontStack.push(m_rawFont);
+  m_type3FontStack.push(m_currentType3Font);
+  m_codeToGIDStack.push(m_codeToGID);
+
   m_painter.top()->save();
 }
 
 void ArthurOutputDev::restoreState(GfxState *state)
 {
   m_painter.top()->restore();
+
+  m_codeToGID = m_codeToGIDStack.top();
+  m_codeToGIDStack.pop();
+  m_rawFont = m_rawFontStack.top();
+  m_rawFontStack.pop();
+  m_currentType3Font = m_type3FontStack.top();
+  m_type3FontStack.pop();
+  m_currentBrush = m_currentBrushStack.top();
+  m_currentBrushStack.pop();
+  m_currentPen = m_currentPenStack.top();
+  m_currentPenStack.pop();
 }
 
 void ArthurOutputDev::updateAll(GfxState *state)
@@ -157,15 +246,27 @@ void ArthurOutputDev::updateAll(GfxState *state)
   m_needFontUpdate = gTrue;
 }
 
-// This looks wrong - why aren't adjusting the matrix?
+// Set CTM (Current Transformation Matrix) to a fixed matrix
+void ArthurOutputDev::setDefaultCTM(double *ctm)
+{
+  m_painter.top()->setTransform(QTransform(ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]));
+}
+
+// Update the CTM (Current Transformation Matrix), i.e., compose the old
+// CTM with a new matrix.
 void ArthurOutputDev::updateCTM(GfxState *state, double m11, double m12,
-				double m21, double m22,
-				double m31, double m32)
+                double m21, double m22,
+                double m31, double m32)
 {
   updateLineDash(state);
   updateLineJoin(state);
   updateLineCap(state);
   updateLineWidth(state);
+
+  QTransform update(m11, m12, m21, m22, m31, m32);
+
+  // We could also set (rather than update) the painter transformation to state->getCMT();
+  m_painter.top()->setTransform(update, true);
 }
 
 void ArthurOutputDev::updateLineDash(GfxState *state)
@@ -174,9 +275,23 @@ void ArthurOutputDev::updateLineDash(GfxState *state)
   int dashLength;
   double dashStart;
   state->getLineDash(&dashPattern, &dashLength, &dashStart);
+
+  // Special handling for zero-length patterns, i.e., solid lines.
+  // Simply calling QPen::setDashPattern with an empty pattern does *not*
+  // result in a solid line.  Rather, the current pattern is unchanged.
+  // See the implementation of the setDashPattern method in the file qpen.cpp.
+  if (dashLength==0)
+  {
+    m_currentPen.setStyle(Qt::SolidLine);
+    m_painter.top()->setPen(m_currentPen);
+    return;
+  }
+
   QVector<qreal> pattern(dashLength);
   for (int i = 0; i < dashLength; ++i) {
-    pattern[i] = dashPattern[i];
+    // pdf measures the dash pattern in dots, but Qt uses the
+    // line width as the unit.
+    pattern[i] = dashPattern[i] / state->getLineWidth();
   }
   m_currentPen.setDashPattern(pattern);
   m_currentPen.setDashOffset(dashStart);
@@ -192,7 +307,10 @@ void ArthurOutputDev::updateLineJoin(GfxState *state)
 {
   switch (state->getLineJoin()) {
   case 0:
-    m_currentPen.setJoinStyle(Qt::MiterJoin);
+    // The correct style here is Qt::SvgMiterJoin, *not* Qt::MiterJoin.
+    // The two differ in what to do if the miter limit is exceeded.
+    // See https://bugs.freedesktop.org/show_bug.cgi?id=102356
+    m_currentPen.setJoinStyle(Qt::SvgMiterJoin);
     break;
   case 1:
     m_currentPen.setJoinStyle(Qt::RoundJoin);
@@ -230,6 +348,11 @@ void ArthurOutputDev::updateLineWidth(GfxState *state)
 {
   m_currentPen.setWidthF(state->getLineWidth());
   m_painter.top()->setPen(m_currentPen);
+  // The updateLineDash method needs to know the line width, but it is sometimes
+  // called before the updateLineWidth method.  To make sure that the last call
+  // to updateLineDash before a drawing operation is always with the correct line
+  // width, we call it here, right after a change to the line width.
+  updateLineDash(state);
 }
 
 void ArthurOutputDev::updateFillColor(GfxState *state)
@@ -320,11 +443,98 @@ void ArthurOutputDev::updateStrokeOpacity(GfxState *state)
 
 void ArthurOutputDev::updateFont(GfxState *state)
 {
+  GfxFont *gfxFont = state->getFont();
+  if (!gfxFont)
+  {
+    return;
+  }
+
+  // The key to look in the font caches
+  ArthurFontID fontID = {*gfxFont->getID(), state->getFontSize()};
+
+  // Current font is a type3 font
+  if (gfxFont->getType() == fontType3)
+  {
+    auto cacheEntry = m_type3FontCache.find(fontID);
+
+    if (cacheEntry!=m_type3FontCache.end()) {
+
+      // Take the font from the cache
+      m_currentType3Font = cacheEntry->second.get();
+
+    } else {
+
+      m_currentType3Font = new ArthurType3Font(m_doc, (Gfx8BitFont*)gfxFont);
+      m_type3FontCache.insert(std::make_pair(fontID,std::unique_ptr<ArthurType3Font>(m_currentType3Font)));
+
+    }
+
+    return;
+  }
+
+  // Non-type3: is the font in the cache?
+  auto cacheEntry = m_rawFontCache.find(fontID);
+
+  if (cacheEntry!=m_rawFontCache.end()) {
+
+    // Take the font from the cache
+    m_rawFont = cacheEntry->second.get();
+
+  } else {
+
+    // New font: load it into the cache
+    float fontSize = state->getFontSize();
+
+    std::unique_ptr<GfxFontLoc> fontLoc(gfxFont->locateFont(xref, nullptr));
+
+    if (fontLoc) {
+      // load the font from respective location
+      switch (fontLoc->locType) {
+      case gfxFontLocEmbedded: {// if there is an embedded font, read it to memory
+        int fontDataLen;
+        const char* fontData = gfxFont->readEmbFontFile(xref, &fontDataLen);
+
+        m_rawFont = new QRawFont(QByteArray(fontData, fontDataLen), fontSize);
+        m_rawFontCache.insert(std::make_pair(fontID,std::unique_ptr<QRawFont>(m_rawFont)));
+
+        // Free the font data, it was copied in the QByteArray constructor
+        free((char*)fontData);
+        break;
+      }
+      case gfxFontLocExternal:{ // font is in an external font file
+        QString fontFile(fontLoc->path->getCString());
+        m_rawFont = new QRawFont(fontFile, fontSize);
+        m_rawFontCache.insert(std::make_pair(fontID,std::unique_ptr<QRawFont>(m_rawFont)));
+        break;
+      }
+      case gfxFontLocResident:{ // font resides in a PS printer
+        qDebug() << "Font Resident Encoding:" << fontLoc->encoding->getCString() << ", not implemented yet!";
+
+      break;
+      }
+      }// end switch
+
+    } else {
+      qDebug() << "Font location not found!";
+      return;
+    }
+  }
+
+  if (!m_rawFont->isValid()) {
+    qDebug() << "RawFont is not valid";
+  }
+
+  // *****************************************************************************
+  //  We have now successfully loaded the font into a QRawFont object.  This
+  //  allows us to draw all the glyphs in the font.  However, what is missing is
+  //  the charcode-to-glyph-index mapping.  Apparently, Qt does not provide this
+  //  information at all.  We therefore now load the font again, this time into
+  //  a Splash font object.  This is wasteful, but I see no other way to access
+  //  the important glyph-index mapping.
+  // *****************************************************************************
+
 #ifdef HAVE_SPLASH
-  GfxFont *gfxFont;
-  GfxFontLoc *fontLoc;
   GfxFontType fontType;
-  SplashOutFontFileID *id;
   SplashFontFile *fontFile;
   SplashFontSrc *fontsrc = nullptr;
   FoFiTrueType *ff;
@@ -332,38 +542,36 @@ void ArthurOutputDev::updateFont(GfxState *state)
   char *tmpBuf;
   int tmpBufLen = 0;
   int *codeToGID;
-  double *textMat;
-  double m11, m12, m21, m22, fontSize;
-  SplashCoord mat[4];
+  SplashCoord mat[4] = {0,0,0,0};
   int n;
   int faceIndex = 0;
-  SplashCoord matrix[6];
+  SplashCoord matrix[6] = {1,0,0,1,0,0};
+  SplashFTFontFile* ftFontFile;
 
   m_needFontUpdate = false;
-  m_font = nullptr;
   fileName = nullptr;
   tmpBuf = nullptr;
-  fontLoc = nullptr;
 
-  if (!(gfxFont = state->getFont())) {
-    goto err1;
-  }
   fontType = gfxFont->getType();
   if (fontType == fontType3) {
-    goto err1;
+    return;
   }
 
+  // Default: no codeToGID table
+  m_codeToGID = nullptr;
+
   // check the font file cache
-  id = new SplashOutFontFileID(gfxFont->getID());
+  SplashOutFontFileID *id = new SplashOutFontFileID(gfxFont->getID());
   if ((fontFile = m_fontEngine->getFontFile(id))) {
     delete id;
 
   } else {
 
-    if (!(fontLoc = gfxFont->locateFont(xref, nullptr))) {
+    std::unique_ptr<GfxFontLoc> fontLoc(gfxFont->locateFont(xref, nullptr));
+    if (!fontLoc) {
       error(errSyntaxError, -1, "Couldn't find a font for '{0:s}'",
-	    gfxFont->getName() ? gfxFont->getName()->getCString()
-	                       : "(unnamed)");
+        gfxFont->getName() ? gfxFont->getName()->getCString()
+                           : "(unnamed)");
       goto err2;
     }
 
@@ -372,7 +580,7 @@ void ArthurOutputDev::updateFont(GfxState *state)
       // if there is an embedded font, read it to memory
       tmpBuf = gfxFont->readEmbFontFile(xref, &tmpBufLen);
       if (! tmpBuf)
-	goto err2;
+    goto err2;
 
     // external font
     } else { // gfxFontLocExternal
@@ -390,90 +598,90 @@ void ArthurOutputDev::updateFont(GfxState *state)
     switch (fontType) {
     case fontType1:
       if (!(fontFile = m_fontEngine->loadType1Font(
-			   id,
-			   fontsrc,
-			   (const char **)((Gfx8BitFont *)gfxFont)->getEncoding()))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc,
+               (const char **)((Gfx8BitFont *)gfxFont)->getEncoding()))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     case fontType1C:
       if (!(fontFile = m_fontEngine->loadType1CFont(
-			   id,
-			   fontsrc,
-			   (const char **)((Gfx8BitFont *)gfxFont)->getEncoding()))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc,
+               (const char **)((Gfx8BitFont *)gfxFont)->getEncoding()))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     case fontType1COT:
       if (!(fontFile = m_fontEngine->loadOpenTypeT1CFont(
-			   id,
-			   fontsrc,
-			   (const char **)((Gfx8BitFont *)gfxFont)->getEncoding()))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc,
+               (const char **)((Gfx8BitFont *)gfxFont)->getEncoding()))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     case fontTrueType:
     case fontTrueTypeOT:
-	if (fileName)
-	 ff = FoFiTrueType::load(fileName->getCString());
-	else
-	ff = FoFiTrueType::make(tmpBuf, tmpBufLen);
+    if (fileName)
+     ff = FoFiTrueType::load(fileName->getCString());
+    else
+    ff = FoFiTrueType::make(tmpBuf, tmpBufLen);
       if (ff) {
-	codeToGID = ((Gfx8BitFont *)gfxFont)->getCodeToGIDMap(ff);
-	n = 256;
-	delete ff;
+    codeToGID = ((Gfx8BitFont *)gfxFont)->getCodeToGIDMap(ff);
+    n = 256;
+    delete ff;
       } else {
-	codeToGID = nullptr;
-	n = 0;
+    codeToGID = nullptr;
+    n = 0;
       }
       if (!(fontFile = m_fontEngine->loadTrueTypeFont(
-			   id,
-			   fontsrc,
-			   codeToGID, n))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc,
+               codeToGID, n))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     case fontCIDType0:
     case fontCIDType0C:
       if (!(fontFile = m_fontEngine->loadCIDFont(
-			   id,
-			   fontsrc))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     case fontCIDType0COT:
       if (((GfxCIDFont *)gfxFont)->getCIDToGID()) {
-	n = ((GfxCIDFont *)gfxFont)->getCIDToGIDLen();
-	codeToGID = (int *)gmallocn(n, sizeof(int));
-	memcpy(codeToGID, ((GfxCIDFont *)gfxFont)->getCIDToGID(),
-	       n * sizeof(int));
+    n = ((GfxCIDFont *)gfxFont)->getCIDToGIDLen();
+    codeToGID = (int *)gmallocn(n, sizeof(int));
+    memcpy(codeToGID, ((GfxCIDFont *)gfxFont)->getCIDToGID(),
+           n * sizeof(int));
       } else {
-	codeToGID = nullptr;
-	n = 0;
+    codeToGID = nullptr;
+    n = 0;
       }      
       if (!(fontFile = m_fontEngine->loadOpenTypeCFFFont(
-			   id,
-			   fontsrc,
-			   codeToGID, n))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc,
+               codeToGID, n))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     case fontCIDType2:
@@ -481,30 +689,30 @@ void ArthurOutputDev::updateFont(GfxState *state)
       codeToGID = nullptr;
       n = 0;
       if (((GfxCIDFont *)gfxFont)->getCIDToGID()) {
-	n = ((GfxCIDFont *)gfxFont)->getCIDToGIDLen();
-	if (n) {
-	  codeToGID = (int *)gmallocn(n, sizeof(int));
-	  memcpy(codeToGID, ((GfxCIDFont *)gfxFont)->getCIDToGID(),
-		  n * sizeof(Gushort));
-	}
+    n = ((GfxCIDFont *)gfxFont)->getCIDToGIDLen();
+    if (n) {
+      codeToGID = (int *)gmallocn(n, sizeof(int));
+      memcpy(codeToGID, ((GfxCIDFont *)gfxFont)->getCIDToGID(),
+          n * sizeof(Gushort));
+    }
       } else {
-	if (fileName)
-	  ff = FoFiTrueType::load(fileName->getCString());
-	else
-	  ff = FoFiTrueType::make(tmpBuf, tmpBufLen);
-	if (! ff)
-	  goto err2;
-	codeToGID = ((GfxCIDFont *)gfxFont)->getCodeToGIDMap(ff, &n);
-	delete ff;
+    if (fileName)
+      ff = FoFiTrueType::load(fileName->getCString());
+    else
+      ff = FoFiTrueType::make(tmpBuf, tmpBufLen);
+    if (! ff)
+      goto err2;
+    codeToGID = ((GfxCIDFont *)gfxFont)->getCodeToGIDMap(ff, &n);
+    delete ff;
       }
       if (!(fontFile = m_fontEngine->loadTrueTypeFont(
-			   id,
-			   fontsrc,
-			   codeToGID, n, faceIndex))) {
-	error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
-	      gfxFont->getName() ? gfxFont->getName()->getCString()
-	                         : "(unnamed)");
-	goto err2;
+               id,
+               fontsrc,
+               codeToGID, n, faceIndex))) {
+    error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'",
+          gfxFont->getName() ? gfxFont->getName()->getCString()
+                             : "(unnamed)");
+    goto err2;
       }
       break;
     default:
@@ -513,48 +721,28 @@ void ArthurOutputDev::updateFont(GfxState *state)
     }
   }
 
-  // get the font matrix
-  textMat = state->getTextMat();
-  fontSize = state->getFontSize();
-  m11 = textMat[0] * fontSize * state->getHorizScaling();
-  m12 = textMat[1] * fontSize * state->getHorizScaling();
-  m21 = textMat[2] * fontSize;
-  m22 = textMat[3] * fontSize;
+  ftFontFile = dynamic_cast<SplashFTFontFile*>(fontFile);
+  if (ftFontFile)
+    m_codeToGID = ftFontFile->getCodeToGID();
 
-  {
-  QMatrix painterMatrix = m_painter.top()->worldMatrix();
-  matrix[0] = painterMatrix.m11();
-  matrix[1] = painterMatrix.m12();
-  matrix[2] = painterMatrix.m21();
-  matrix[3] = painterMatrix.m22();
-  matrix[4] = painterMatrix.dx();
-  matrix[5] = painterMatrix.dy();
-  }
+  // create dummy font
+  // The font matrices are bogus, but we will never use the glyphs anyway.
+  // However we need to call m_fontEngine->getFont, in order to have the
+  // font in the Splash font cache.  Otherwise we'd load it again and again.
+  m_fontEngine->getFont(fontFile, mat, matrix);
 
-  // create the scaled font
-  mat[0] = m11;  mat[1] = -m12;
-  mat[2] = m21;  mat[3] = -m22;
-  m_font = m_fontEngine->getFont(fontFile, mat, matrix);
-
-  delete fontLoc;
   if (fontsrc && !fontsrc->isFile)
       fontsrc->unref();
   return;
 
  err2:
   delete id;
-  delete fontLoc;
- err1:
-  if (fontsrc && !fontsrc->isFile)
-      fontsrc->unref();
-  return;
 #endif
 }
 
 static QPainterPath convertPath(GfxState *state, GfxPath *path, Qt::FillRule fillRule)
 {
   GfxSubpath *subpath;
-  double x1, y1, x2, y2, x3, y3;
   int i, j;
 
   QPainterPath qPath;
@@ -562,24 +750,21 @@ static QPainterPath convertPath(GfxState *state, GfxPath *path, Qt::FillRule fil
   for (i = 0; i < path->getNumSubpaths(); ++i) {
     subpath = path->getSubpath(i);
     if (subpath->getNumPoints() > 0) {
-      state->transform(subpath->getX(0), subpath->getY(0), &x1, &y1);
-      qPath.moveTo(x1, y1);
+      qPath.moveTo(subpath->getX(0), subpath->getY(0));
       j = 1;
       while (j < subpath->getNumPoints()) {
-	if (subpath->getCurve(j)) {
-	  state->transform(subpath->getX(j), subpath->getY(j), &x1, &y1);
-	  state->transform(subpath->getX(j+1), subpath->getY(j+1), &x2, &y2);
-	  state->transform(subpath->getX(j+2), subpath->getY(j+2), &x3, &y3);
-	  qPath.cubicTo( x1, y1, x2, y2, x3, y3);
-	  j += 3;
-	} else {
-	  state->transform(subpath->getX(j), subpath->getY(j), &x1, &y1);
-	  qPath.lineTo(x1, y1);
-	  ++j;
-	}
+    if (subpath->getCurve(j)) {
+          qPath.cubicTo( subpath->getX(j),   subpath->getY(j),
+                         subpath->getX(j+1), subpath->getY(j+1),
+                         subpath->getX(j+2), subpath->getY(j+2));
+      j += 3;
+    } else {
+      qPath.lineTo(subpath->getX(j), subpath->getY(j));
+      ++j;
+    }
       }
       if (subpath->isClosed()) {
-	qPath.closeSubpath();
+    qPath.closeSubpath();
       }
     }
   }
@@ -729,120 +914,129 @@ GBool ArthurOutputDev::axialShadedFill(GfxState *state, GfxAxialShading *shading
 
 void ArthurOutputDev::clip(GfxState *state)
 {
-  m_painter.top()->setClipPath(convertPath( state, state->getPath(), Qt::WindingFill ) );
+  m_painter.top()->setClipPath(convertPath( state, state->getPath(), Qt::WindingFill ), Qt::IntersectClip );
 }
 
 void ArthurOutputDev::eoClip(GfxState *state)
 {
-  m_painter.top()->setClipPath(convertPath( state, state->getPath(), Qt::OddEvenFill ) );
+  m_painter.top()->setClipPath(convertPath( state, state->getPath(), Qt::OddEvenFill ), Qt::IntersectClip );
 }
 
 void ArthurOutputDev::drawChar(GfxState *state, double x, double y,
-			       double dx, double dy,
-			       double originX, double originY,
-			       CharCode code, int nBytes, Unicode *u, int uLen) {
-#ifdef HAVE_SPLASH
-  double x1, y1;
-  double x2, y2;
-//   SplashPath *path;
-  int render;
+                   double dx, double dy,
+                   double originX, double originY,
+                   CharCode code, int nBytes, Unicode *u, int uLen) {
 
-  if (m_needFontUpdate) {
-    updateFont(state);
-  }
-  if (!m_font) {
+  // First handle type3 fonts
+  GfxFont *gfxFont = state->getFont();
+
+  GfxFontType fontType = gfxFont->getType();
+  if (fontType == fontType3) {
+
+    /////////////////////////////////////////////////////////////////////
+    //  Draw the QPicture that contains the glyph onto the page
+    /////////////////////////////////////////////////////////////////////
+
+    // Store the QPainter state; we need to modify it temporarily
+    m_painter.top()->save();
+
+    // Make the glyph position the coordinate origin -- that's our center of scaling
+    m_painter.top()->translate(QPointF(x-originX, y-originY));
+
+    const double* mat = gfxFont->getFontMatrix();
+    QTransform fontMatrix(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
+
+    // Scale with the font size
+    fontMatrix.scale(state->getFontSize(), state->getFontSize());
+    m_painter.top()->setTransform(fontMatrix,true);
+
+    // Apply the text matrix on top
+    const double *textMat = state->getTextMat();
+
+    QTransform textTransform(textMat[0] * state->getHorizScaling(),
+                             textMat[1] * state->getHorizScaling(),
+                             textMat[2],
+                             textMat[3],
+                             0,
+                             0);
+
+    m_painter.top()->setTransform(textTransform,true);
+
+    // Actually draw the glyph
+    int gid = m_currentType3Font->codeToGID[code];
+    m_painter.top()->drawPicture(QPointF(0,0), m_currentType3Font->getGlyph(gid));
+
+    // Restore transformation
+    m_painter.top()->restore();
+
     return;
   }
+
 
   // check for invisible text -- this is used by Acrobat Capture
-  render = state->getRender();
-  if (render == 3) {
+  int render = state->getRender();
+  if (render == 3 || !m_rawFont) {
+    qDebug() << "Invisible text found!";
     return;
   }
 
-  x -= originX;
-  y -= originY;
+  if (!(render & 1))
+  {
+    quint32 glyphIndex = (m_codeToGID) ? m_codeToGID[code] : code;
+    QPointF glyphPosition = QPointF(x-originX, y-originY);
 
-  // fill
-  if (!(render & 1)) {
-    SplashPath * fontPath;
-    fontPath = m_font->getGlyphPath(code);
-    if (fontPath) {
-      QPainterPath qPath;
-      qPath.setFillRule(Qt::WindingFill);
-      for (int i = 0; i < fontPath->length; ++i) {
-        // SplashPath.flags: bitwise or allowed
-        if (fontPath->flags[i] & splashPathLast || fontPath->flags[i] & splashPathClosed) {
-            qPath.closeSubpath();
-        }
-        if (fontPath->flags[i] & splashPathFirst) {
-            state->transform(fontPath->pts[i].x+x, -fontPath->pts[i].y+y, &x1, &y1);
-            qPath.moveTo(x1,y1);
-        }
-        if (fontPath->flags[i] & splashPathCurve) {
-            state->transform(fontPath->pts[i].x+x, -fontPath->pts[i].y+y, &x1, &y1);
-            state->transform(fontPath->pts[i+1].x+x, -fontPath->pts[i+1].y+y, &x2, &y2);
-            qPath.quadTo(x1,y1,x2,y2);
-            ++i;
-        }
-        // FIXME fix this
-        // 	else if (fontPath->flags[i] & splashPathArcCW) {
-        // 	  qDebug() << "Need to implement arc";
-        // 	}
-        else {
-            state->transform(fontPath->pts[i].x+x, -fontPath->pts[i].y+y, &x1, &y1);
-            qPath.lineTo(x1,y1);
-        }
-      }
-      GfxRGB rgb;
-      QColor brushColour = m_currentBrush.color();
-      state->getFillRGB(&rgb);
-      brushColour.setRgbF(colToDbl(rgb.r), colToDbl(rgb.g), colToDbl(rgb.b), state->getFillOpacity());
-      m_painter.top()->setBrush(brushColour);
-      m_painter.top()->setPen(Qt::NoPen);
-      m_painter.top()->drawPath(qPath);
-      delete fontPath;
-    }
+    // QGlyphRun objects can hold an entire sequence of glyphs, and it would possibly
+    // be more efficient to simply note the glyph and glyph position here and then
+    // draw several glyphs at once in the endString method.  What keeps us from doing
+    // that is the transformation below: each glyph needs to be drawn upside down,
+    // i.e., reflected at its own baseline.  Since we have no guarantee that this
+    // baseline is the same for all glyphs in a string we have to do it one by one.
+    QGlyphRun glyphRun;
+    glyphRun.setRawData(&glyphIndex, &glyphPosition, 1);
+    glyphRun.setRawFont(*m_rawFont);
+
+    // Store the QPainter state; we need to modify it temporarily
+    m_painter.top()->save();
+
+    // Apply the text matrix to the glyph.  The glyph is not scaled by the font size,
+    // because the font in m_rawFont already has the correct size.
+    // Additionally, the CTM is upside down, i.e., it contains a negative Y-scaling
+    // entry.  Therefore, Qt will paint the glyphs upside down.  We need to temporarily
+    // reflect the page at glyphPosition.y().
+
+    // Make the glyph position the coordinate origin -- that's our center of scaling
+    const double *textMat = state->getTextMat();
+
+    m_painter.top()->translate(QPointF(glyphPosition.x(),glyphPosition.y()));
+
+    QTransform textTransform(textMat[0] * state->getHorizScaling(),
+                             textMat[1] * state->getHorizScaling(),
+                             -textMat[2], // reflect at the horizontal axis,
+                             -textMat[3], // because CTM is upside-down.
+                             0,
+                             0);
+
+    m_painter.top()->setTransform(textTransform,true);
+
+    // We are painting a filled glyph here.  But QPainter uses the pen to draw even filled text,
+    // not the brush.  (see, e.g.,  http://doc.qt.io/qt-5/qpainter.html#setPen )
+    // Therefore we have to temporarily overwrite the pen color.
+
+    // Since we are drawing a filled glyph, one would really expect to have m_currentBrush
+    // have the correct color.  However, somehow state->getFillRGB can change without
+    // updateFillColor getting called.  Then m_currentBrush may not contain the correct color.
+    GfxRGB rgb;
+    state->getFillRGB(&rgb);
+    QColor fontColor;
+    fontColor.setRgbF(colToDbl(rgb.r), colToDbl(rgb.g), colToDbl(rgb.b), state->getFillOpacity());
+    m_painter.top()->setPen(fontColor);
+
+    // Actually draw the glyph
+    m_painter.top()->drawGlyphRun(QPointF(-glyphPosition.x(),-glyphPosition.y()), glyphRun);
+
+    // Restore transformation and pen color
+    m_painter.top()->restore();
   }
-
-  // stroke
-  if ((render & 3) == 1 || (render & 3) == 2) {
-    qDebug() << "no stroke";
-    /*
-    if ((path = m_font->getGlyphPath(code))) {
-      path->offset((SplashCoord)x1, (SplashCoord)y1);
-      splash->stroke(path);
-      delete path;
-    }
-    */
-  }
-
-  // clip
-  if (render & 4) {
-    qDebug() << "no clip";
-    /*
-    path = m_font->getGlyphPath(code);
-    path->offset((SplashCoord)x1, (SplashCoord)y1);
-    if (textClipPath) {
-      textClipPath->append(path);
-      delete path;
-    } else {
-      textClipPath = path;
-    }
-    */
-  }
-#endif
-}
-
-GBool ArthurOutputDev::beginType3Char(GfxState *state, double x, double y,
-				      double dx, double dy,
-				      CharCode code, Unicode *u, int uLen)
-{
-  return gFalse;
-}
-
-void ArthurOutputDev::endType3Char(GfxState *state)
-{
 }
 
 void ArthurOutputDev::type3D0(GfxState *state, double wx, double wy)
@@ -850,7 +1044,7 @@ void ArthurOutputDev::type3D0(GfxState *state, double wx, double wy)
 }
 
 void ArthurOutputDev::type3D1(GfxState *state, double wx, double wy,
-			      double llx, double lly, double urx, double ury)
+                  double llx, double lly, double urx, double ury)
 {
 }
 
@@ -860,86 +1054,48 @@ void ArthurOutputDev::endTextObject(GfxState *state)
 
 
 void ArthurOutputDev::drawImageMask(GfxState *state, Object *ref, Stream *str,
-				    int width, int height, GBool invert,
-				    GBool interpolate, GBool inlineImg)
+                    int width, int height, GBool invert,
+                    GBool interpolate, GBool inlineImg)
 {
-  qDebug() << "drawImageMask";
-#if 0
-  unsigned char *buffer;
-  unsigned char *dest;
-  cairo_surface_t *image;
-  cairo_pattern_t *pattern;
-  int x, y;
-  ImageStream *imgStr;
-  Guchar *pix;
-  double *ctm;
-  cairo_matrix_t matrix;
-  int invert_bit;
-  int row_stride;
-
-  row_stride = (width + 3) & ~3;
-  buffer = (unsigned char *) malloc (height * row_stride);
-  if (buffer == nullptr) {
-    error(-1, "Unable to allocate memory for image.");
-    return;
-  }
-
-  /* TODO: Do we want to cache these? */
-  imgStr = new ImageStream(str, width, 1, 1);
+  std::unique_ptr<ImageStream> imgStr(new ImageStream(str, width,
+                                                      1,    // numPixelComps
+                                                      1));  // getBits
   imgStr->reset();
 
-  invert_bit = invert ? 1 : 0;
+  // TODO: Would using QImage::Format_Mono be more efficient here?
+  QImage image(width, height, QImage::Format_ARGB32);
+  unsigned int *data = (unsigned int *)image.bits();
+  int stride = image.bytesPerLine()/4;
 
-  for (y = 0; y < height; y++) {
-    pix = imgStr->getLine();
-    dest = buffer + y * row_stride;
-    for (x = 0; x < width; x++) {
+  QRgb fillColor = m_currentBrush.color().rgb();
 
-      if (pix[x] ^ invert_bit)
-	*dest++ = 0;
-      else
-	*dest++ = 255;
+  for (int y = 0; y < height; y++) {
+
+    Guchar *pix = imgStr->getLine();
+
+    // Invert the vertical coordinate: y is increasing from top to bottom
+    // on the page, but y is increasing bottom to top in the picture.
+    unsigned int* dest = data + (height-1-y) * stride;
+
+    for (int x = 0; x < width; x++) {
+
+      bool opaque = ((bool)pix[x]) == invert;
+      dest[x] = (opaque) ? fillColor : 0;
+
     }
   }
 
-  image = cairo_image_surface_create_for_data (buffer, CAIRO_FORMAT_A8,
-					  width, height, row_stride);
-  if (image == nullptr)
-    return;
-  pattern = cairo_pattern_create_for_surface (image);
-  if (pattern == nullptr)
-    return;
-
-  ctm = state->getCTM();
-  LOG (printf ("drawImageMask %dx%d, matrix: %f, %f, %f, %f, %f, %f\n",
-	       width, height, ctm[0], ctm[1], ctm[2], ctm[3], ctm[4], ctm[5]));
-  matrix.xx = ctm[0] / width;
-  matrix.xy = -ctm[2] / height;
-  matrix.yx = ctm[1] / width;
-  matrix.yy = -ctm[3] / height;
-  matrix.x0 = ctm[2] + ctm[4];
-  matrix.y0 = ctm[3] + ctm[5];
-  cairo_matrix_invert (&matrix);
-  cairo_pattern_set_matrix (pattern, &matrix);
-
-  cairo_pattern_set_filter (pattern, CAIRO_FILTER_BEST);
-  /* FIXME: Doesn't the image mask support any colorspace? */
-  cairo_set_source_rgb (cairo, fill_color.r, fill_color.g, fill_color.b);
-  cairo_mask (cairo, pattern);
-
-  cairo_pattern_destroy (pattern);
-  cairo_surface_destroy (image);
-  free (buffer);
+  // At this point, the QPainter coordinate transformation (CTM) is such
+  // that QRect(0,0,1,1) is exactly the area of the image.
+  m_painter.top()->drawImage( QRect(0,0,1,1), image );
   imgStr->close ();
-  delete imgStr;
-#endif
 }
 
 //TODO: lots more work here.
 void ArthurOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
-				int width, int height,
-				GfxImageColorMap *colorMap,
-				GBool interpolate, int *maskColors, GBool inlineImg)
+                int width, int height,
+                GfxImageColorMap *colorMap,
+                GBool interpolate, int *maskColors, GBool inlineImg)
 {
   unsigned int *data;
   unsigned int *line;
@@ -947,15 +1103,13 @@ void ArthurOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
   ImageStream *imgStr;
   Guchar *pix;
   int i;
-  double *ctm;
-  QMatrix matrix;
   QImage image;
   int stride;
   
   /* TODO: Do we want to cache these? */
   imgStr = new ImageStream(str, width,
-			   colorMap->getNumPixelComps(),
-			   colorMap->getBits());
+               colorMap->getNumPixelComps(),
+               colorMap->getBits());
   imgStr->reset();
   
   image = QImage(width, height, QImage::Format_ARGB32);
@@ -963,7 +1117,9 @@ void ArthurOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
   stride = image.bytesPerLine()/4;
   for (y = 0; y < height; y++) {
     pix = imgStr->getLine();
-    line = data+y*stride;
+    // Invert the vertical coordinate: y is increasing from top to bottom
+    // on the page, but y is increasing bottom to top in the picture.
+    line = data+(height-1-y)*stride;
     colorMap->getRGBLine(pix, line, width);
 
     if (maskColors) {
@@ -983,13 +1139,79 @@ void ArthurOutputDev::drawImage(GfxState *state, Object *ref, Stream *str,
     }
   }
 
-  ctm = state->getCTM();
-  matrix.setMatrix(ctm[0] / width, ctm[1] / width, -ctm[2] / height, -ctm[3] / height, ctm[2] + ctm[4], ctm[3] + ctm[5]);
-
-  m_painter.top()->setMatrix(matrix, true);
-  m_painter.top()->drawImage( QPoint(0,0), image );
+  // At this point, the QPainter coordinate transformation (CTM) is such
+  // that QRect(0,0,1,1) is exactly the area of the image.
+  m_painter.top()->drawImage( QRect(0,0,1,1), image );
   delete imgStr;
 
+}
+
+void ArthurOutputDev::drawSoftMaskedImage(GfxState *state, Object *ref, Stream *str,
+                                          int width, int height,
+                                          GfxImageColorMap *colorMap,
+                                          GBool interpolate,
+                                          Stream *maskStr,
+                                          int maskWidth, int maskHeight,
+                                          GfxImageColorMap *maskColorMap,
+                                          GBool maskInterpolate)
+{
+  // Bail out if the image size doesn't match the mask size.  I don't know
+  // what to do in this case.
+  if (width!=maskWidth || height!=maskHeight)
+  {
+    qDebug() << "Soft mask size does not match image size!";
+    drawImage(state, ref, str, width, height, colorMap, interpolate, nullptr, gFalse);
+    return;
+  }
+
+  // Bail out if the mask isn't a single channel.  I don't know
+  // what to do in this case.
+  if (maskColorMap->getColorSpace()->getNComps() != 1)
+  {
+    qDebug() << "Soft mask is not a single 8-bit channel!";
+    drawImage(state, ref, str, width, height, colorMap, interpolate, nullptr, gFalse);
+    return;
+  }
+
+  /* TODO: Do we want to cache these? */
+  std::unique_ptr<ImageStream> imgStr(new ImageStream(str, width,
+                                                      colorMap->getNumPixelComps(),
+                                                      colorMap->getBits()));
+  imgStr->reset();
+
+  std::unique_ptr<ImageStream> maskImageStr(new ImageStream(maskStr, maskWidth,
+                                                            maskColorMap->getNumPixelComps(),
+                                                            maskColorMap->getBits()));
+  maskImageStr->reset();
+
+  QImage image(width, height, QImage::Format_ARGB32);
+  unsigned int *data = (unsigned int *)image.bits();
+  int stride = image.bytesPerLine()/4;
+
+  std::vector<Guchar> maskLine(maskWidth);
+
+  for (int y = 0; y < height; y++) {
+
+    Guchar *pix = imgStr->getLine();
+    Guchar *maskPix = maskImageStr->getLine();
+
+    // Invert the vertical coordinate: y is increasing from top to bottom
+    // on the page, but y is increasing bottom to top in the picture.
+    unsigned int* line = data+(height-1-y)*stride;
+    colorMap->getRGBLine(pix, line, width);
+
+    // Apply the mask values to the image alpha channel
+    maskColorMap->getGrayLine(maskPix, maskLine.data(), width);
+    for (int x = 0; x < width; x++)
+    {
+      *line = *line | (maskLine[x]<<24);
+      line++;
+    }
+  }
+
+  // At this point, the QPainter coordinate transformation (CTM) is such
+  // that QRect(0,0,1,1) is exactly the area of the image.
+  m_painter.top()->drawImage( QRect(0,0,1,1), image );
 }
 
 void ArthurOutputDev::beginTransparencyGroup(GfxState * /*state*/, double * /*bbox*/,

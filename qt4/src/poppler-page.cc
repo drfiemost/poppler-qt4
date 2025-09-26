@@ -16,6 +16,7 @@
  * Copyright (C) 2012, 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
  * Copyright (C) 2015 William Bader <williambader@hotmail.com>
  * Copyright (C) 2016 Arseniy Lartsev <arseniy@alumni.chalmers.se>
+ * Copyright (C) 2017, 2018, Oliver Sander <oliver.sander@tu-dresden.de>
  * Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
  * Copyright (C) 2017, 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  *
@@ -456,7 +457,7 @@ bool Page::renderToPainter(QPainter* painter, double xres, double yres, int x, i
           painter->setRenderHint(QPainter::TextAntialiasing);
       painter->translate(x == -1 ? 0 : -x, y == -1 ? 0 : -y);
       ArthurOutputDev arthur_output(painter);
-      arthur_output.startDoc(m_page->parentDoc->doc->getXRef());
+      arthur_output.startDoc(m_page->parentDoc->doc);
       m_page->parentDoc->doc->displayPageSlice(&arthur_output,
                                                m_page->index + 1,
                                                xres,
